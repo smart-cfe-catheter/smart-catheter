@@ -1,5 +1,10 @@
 import pandas as pd
 
+
+def get_reference_value(table):
+    return table.at[0, 'sensor1'], table.at[0, 'sensor2'], table.at[0, 'sensor3']
+
+
 record_count = 32
 min_val = 1500
 
@@ -31,7 +36,19 @@ for i in range(record_count):
                 x_data.at[idx + start, 'timestamp'] += plus * idx
             start = end
 
+    ref_val1, ref_val2, ref_val3 = get_reference_value(x_data)
+    x_data['sensor1'] -= ref_val1
+    x_data['sensor2'] -= ref_val2
+    x_data['sensor3'] -= ref_val3
+
     data = pd.merge_asof(y_data, x_data, on='timestamp')
+    data['timedelta'] = pd.Timedelta('00:00:00')
+    for idx in data.index[-1:0:-1]:
+        here = data.at[idx, 'timestamp']
+        prev = data.at[idx - 1, 'timestamp']
+
+        data.at[idx, 'timedelta'] = here - prev
+
     data.to_csv(f'data/preprocess/{i + 1}.csv', index=False, header=True)
     print(f'{i + 1} record preprocess finished')
 
