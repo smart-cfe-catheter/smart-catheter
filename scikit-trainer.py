@@ -1,15 +1,8 @@
-import pandas as pd
 from sklearn.model_selection import train_test_split
 from sklearn.linear_model import LinearRegression
+from formatter import formatter
 
-record_count = 32
-data = pd.DataFrame()
-
-for i in range(record_count):
-    record = pd.read_csv(f'data/preprocess/{i + 1}.csv', index_col=False,
-                         usecols=['sensor1', 'sensor2', 'sensor3', 'weight'])
-    record = record.dropna()
-    data = data.append(record, ignore_index=True)
+data = formatter(32, time_series=False, ignore_nan=True)
 
 x_data = data.loc[:, ['sensor1', 'sensor2', 'sensor3']].copy()
 y_data = data.loc[:, ['weight']].copy()
