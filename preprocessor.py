@@ -22,12 +22,17 @@ for i in range(record_count):
         start_date = x_data.at[start, 'timestamp']
         end_date = x_data.at[end, 'timestamp']
 
+        '''
         if x_data.at[end, 'sensor1'] < min_val:
             x_data.at[end, 'sensor1'] *= 1e9
+            print('1')
         if x_data.at[end, 'sensor2'] < min_val:
             x_data.at[end, 'sensor2'] *= 1e9
+            print('2')
         if x_data.at[end, 'sensor3'] < min_val:
             x_data.at[end, 'sensor3'] *= 1e9
+            print('3')
+        '''
 
         if start_date != end_date or end is x_data.index[-1]:
             count = (end - start + 1) if end is x_data.index[-1] else (end - start)
