@@ -1,14 +1,20 @@
-from torch.utils.data import Dataset, random_split
 import numpy as np
+from torch.utils.data import Dataset, random_split
 
 
 class CatheterDataset(Dataset):
-    def __init__(self, train=True, transform=None, target_transform=None):
-        data_cnt = 60000 if train else 1000
-        self.x = np.random.randn(data_cnt, 3)
-        self.y = np.random.rand(data_cnt)
-        self.len = len(self.x)
+    def __init__(self, train=True, time_series=False, transform=None, target_transform=None):
+        self.x = np.empty((0, 3))
+        self.y = np.empty(0)
+        dir_name = 'data/train' if train else 'data/test'
+        cnt = 28 if train else 4
 
+        for i in range(cnt):
+            record = np.loadtxt(f'{dir_name}/{i + 1}.csv', delimiter=',', skiprows=1, usecols=(1, 2, 3, 4))
+            self.x = np.append(self.x, record[:, [1, 2, 3]], axis=0)
+            self.y = np.append(self.y, record[:, 0], axis=0)
+
+        self.len = self.x.shape[0]
         self.transform = transform
         self.target_transform = target_transform
 
@@ -35,3 +41,8 @@ def load_dataset(transform=None, target_transform=None):
     train_data, validation_data = split_result[0], split_result[1]
 
     return train_data, validation_data, test_data
+
+
+if __name__ == "__main__":
+    data = CatheterDataset()
+    print(data[:][0].shape)
