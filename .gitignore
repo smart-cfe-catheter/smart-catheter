@@ -148,3 +148,5 @@ target/
 data/
 .idea/
 results/
+figures/
+models/

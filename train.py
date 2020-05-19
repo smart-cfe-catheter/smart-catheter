@@ -1,19 +1,26 @@
 import argparse
-import torch
+
 import matplotlib.pyplot as plt
+import torch
+from torch.nn import init
 from torch.utils.data import DataLoader
-from torch import nn
 
 import models
-from trainer import Trainer
-from dataset import load_dataset
 import transforms
+from dataset import load_dataset
+from trainer import Trainer
+
+
+def weight_init(model):
+    name = model.__class__.__name__
+    if name.find('Conv') != -1 or name.find('Linear') != -1:
+        init.xavier_normal_(model.weight.data)
 
 
 parser = argparse.ArgumentParser(description='Smart Catheter Trainer')
 parser.add_argument('--batch-size', type=int, default=32, metavar='N',
                     help='input batch size for training (default: 32)')
-parser.add_argument('--epochs', type=int, default=5, metavar='N',
+parser.add_argument('--epochs', type=int, default=1, metavar='N',
                     help='number of epochs to train (default: 5)')
 parser.add_argument('--lr', type=float, default=1e-6, metavar='LR',
                     help='learning rate (default: 1e-6)')
@@ -40,7 +47,7 @@ print(f'device selected: {device}\n')
 
 model = models.BasicNet()
 
-model = model.to(device).double()
+model = model.to(device).double().apply(weight_init)
 trainer = Trainer(model,
                   optimizer=torch.optim.Adam(model.parameters(), lr=args.lr),
                   device=device)
