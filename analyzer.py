@@ -1,6 +1,7 @@
 import argparse
 
 import matplotlib.pyplot as plt
+import numpy as np
 import torch
 
 from dataset import load_dataset
@@ -31,6 +32,13 @@ datasets = load_dataset()
 titles = ['Train', 'Validation', 'Test']
 
 for idx, dataset in enumerate(datasets):
+    print(f'# {titles[idx]} set')
+
+    for i in range(3):
+        print(f'## Sensor {i}')
+        print(f'### Mean: {np.mean(dataset[:][0][:, i])}')
+        print(f'### Std: {np.std(dataset[:][0][:, i])}\n')
+
     plt.figure(2 * idx + 1)
     for i in range(3):
         histogram_plot(dataset, i + 1)

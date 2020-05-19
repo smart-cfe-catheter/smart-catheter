@@ -10,7 +10,7 @@ class Trainer:
 
     @staticmethod
     def compute_loss(output, target):
-        return f.mse_loss(output, target)
+        return f.mse_loss(output, target, reduction='sum')
 
     def train(self, loader, log_interval=100):
         self.model.train()
@@ -23,9 +23,11 @@ class Trainer:
             output = self.model(x)
 
             loss = self.compute_loss(output, y)
+            total_loss += loss
+
+            loss = loss / len(x)
             loss.backward()
             self.optimizer.step()
-            total_loss += loss
 
             if batch % log_interval == 0:
                 print(f'Batch {batch}/{len(loader)}\t Loss: {loss.item()}')

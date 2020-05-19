@@ -6,7 +6,7 @@ from torch.nn import init
 from torch.utils.data import DataLoader
 
 import models
-import transforms
+import transforms as tf
 from dataset import load_dataset
 from trainer import Trainer
 
@@ -21,7 +21,7 @@ parser = argparse.ArgumentParser(description='Smart Catheter Trainer')
 parser.add_argument('--batch-size', type=int, default=32, metavar='N',
                     help='input batch size for training (default: 32)')
 parser.add_argument('--epochs', type=int, default=1, metavar='N',
-                    help='number of epochs to train (default: 5)')
+                    help='number of epochs to train (default: 1)')
 parser.add_argument('--lr', type=float, default=1e-6, metavar='LR',
                     help='learning rate (default: 1e-6)')
 parser.add_argument('--no-cuda', action='store_true', default=False,
@@ -47,12 +47,13 @@ print(f'device selected: {device}\n')
 
 model = models.BasicNet()
 
-model = model.to(device).double().apply(weight_init)
+model = model.to(device).apply(weight_init).double()
 trainer = Trainer(model,
                   optimizer=torch.optim.Adam(model.parameters(), lr=args.lr),
                   device=device)
 
-train_data, validation_data, test_data = load_dataset(transform=transforms.ToTensor())
+train_data, validation_data, test_data = load_dataset(transform=tf.ToTensor(),
+                                                      target_transform=tf.MassToForce())
 train_loader = DataLoader(dataset=train_data, batch_size=args.batch_size)
 validation_loader = DataLoader(dataset=validation_data)
 test_loader = DataLoader(dataset=test_data)
