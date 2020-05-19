@@ -36,12 +36,13 @@ args = parser.parse_args()
 use_cuda = not args.no_cuda and torch.cuda.is_available()
 torch.manual_seed(args.seed)
 device = torch.device('cuda' if use_cuda else 'cpu')
+print(f'device selected: {device}\n')
 
 model = models.BasicNet()
 
 model = model.to(device).double()
 trainer = Trainer(model,
-                  optimizer=torch.optim.Adam(model.parameters()),
+                  optimizer=torch.optim.Adam(model.parameters(), lr=args.lr),
                   device=device)
 
 train_data, validation_data, test_data = load_dataset(transform=transforms.ToTensor())
