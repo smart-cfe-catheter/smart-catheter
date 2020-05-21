@@ -1,9 +1,12 @@
+import time
 import argparse
-
 import matplotlib.pyplot as plt
 import torch
 from torch.nn import init
+from torch.nn import functional as f
 from torch.utils.data import DataLoader
+from torchvision import transforms
+from torch.optim.lr_scheduler import StepLR
 
 import models
 import transforms as tf
@@ -18,7 +21,7 @@ def weight_init(model):
 
 
 parser = argparse.ArgumentParser(description='Smart Catheter Trainer')
-parser.add_argument('--batch-size', type=int, default=32, metavar='N',
+parser.add_argument('--batch-size', type=int, default=256, metavar='N',
                     help='input batch size for training (default: 32)')
 parser.add_argument('--epochs', type=int, default=1, metavar='N',
                     help='number of epochs to train (default: 1)')
@@ -45,21 +48,18 @@ torch.manual_seed(args.seed)
 device = torch.device('cuda' if use_cuda else 'cpu')
 print(f'device selected: {device}\n')
 
-model = models.BasicNet()
+model = models.BasicNet().to(device).apply(weight_init)
+optimizer = torch.optim.Adam(model.parameters(), lr=args.lr)
+trainer = Trainer(model, optimizer=optimizer, device=device)
 
-model = model.to(device).apply(weight_init).double()
-trainer = Trainer(model,
-                  optimizer=torch.optim.Adam(model.parameters(), lr=args.lr),
-                  device=device)
-
-train_data, validation_data, test_data = load_dataset(transform=tf.ToTensor(),
-                                                      target_transform=tf.MassToForce())
+train_data, validation_data, test_data = load_dataset(transform=tf.ToTensor())
 train_loader = DataLoader(dataset=train_data, batch_size=args.batch_size)
-validation_loader = DataLoader(dataset=validation_data)
-test_loader = DataLoader(dataset=test_data)
+validation_loader = DataLoader(dataset=validation_data, batch_size=args.batch_size)
+test_loader = DataLoader(dataset=test_data, batch_size=args.batch_size)
 
 train_losses = []
 validation_losses = []
+scheduler = StepLR(optimizer, step_size=1)
 for e in range(args.epochs):
     print(f'<Train Epoch #{e + 1}>')
     train_loss = trainer.train(train_loader, log_interval=args.log_interval)
@@ -68,6 +68,7 @@ for e in range(args.epochs):
     train_losses.append(train_loss)
     validation_losses.append(validation_loss)
     print(f'Train Loss: {train_loss} / Validation Loss: {validation_loss}\n')
+    scheduler.step()
 
 print(f'\n<Final Losses>\n'
       f'- train: {trainer.test(train_loader)}\n'
@@ -85,3 +86,4 @@ if args.visualize:
 if args.save_model:
     torch.save(model.state_dict(), f'models/{args.file_name}.pt')
     plt.savefig(f'figures/{args.file_name}.png', dpi=300)
+

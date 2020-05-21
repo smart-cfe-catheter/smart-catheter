@@ -13,5 +13,5 @@ class BasicNet(nn.Module):
     def forward(self, x):
         x = f.relu(self.fc1(x))
         x = f.relu(self.fc2(x))
-
         return self.result_layer(x)
+

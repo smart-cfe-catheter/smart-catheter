@@ -1,16 +1,9 @@
 import torch
-from scipy.constants import g
 
 
 class ToTensor(object):
     def __call__(self, x):
-        return torch.from_numpy(x)
-
-
-class MassToForce(object):
-    def __call__(self, x):
-        return x * g * 1e-3
-
+        return torch.Tensor(x)
 
 class Normalize(object):
     def __call__(self, x):

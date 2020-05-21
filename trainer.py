@@ -8,27 +8,20 @@ class Trainer:
         self.optimizer = optimizer
         self.device = device
 
-    @staticmethod
-    def compute_loss(output, target):
-        return f.mse_loss(output, target, reduction='sum')
-
     def train(self, loader, log_interval=100):
         self.model.train()
         total_loss = 0.0
 
         for batch, (x, y) in enumerate(loader):
-            x, y = x.double().to(self.device), y.view(-1, 1).to(self.device)
-
+            x, y = x.to(self.device), y.to(self.device)
             self.optimizer.zero_grad()
+
             output = self.model(x)
-
-            loss = self.compute_loss(output, y)
-            total_loss += loss
-
-            loss = loss / len(x)
+            loss = f.mse_loss(output, y)
+            total_loss += loss.item() * len(x)
             loss.backward()
-            self.optimizer.step()
 
+            self.optimizer.step()
             if batch % log_interval == 0:
                 print(f'Batch {batch}/{len(loader)}\t Loss: {loss.item()}')
 
@@ -40,9 +33,9 @@ class Trainer:
 
         with torch.no_grad():
             for x, y in loader:
-                x, y = x.double().to(self.device), y.view(-1, 1).to(self.device)
+                x, y = x.to(self.device), y.to(self.device)
 
                 output = self.model(x)
-                total_loss += self.compute_loss(output, y)
+                total_loss += f.mse_loss(output, y, reduction='sum').item()
 
         return total_loss / len(loader.dataset)

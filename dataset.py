@@ -1,6 +1,6 @@
 import numpy as np
 from torch.utils.data import Dataset, random_split
-
+from scipy.constants import g
 
 class CatheterDataset(Dataset):
     def __init__(self, time_series=False, transform=None, target_transform=None):
@@ -14,6 +14,7 @@ class CatheterDataset(Dataset):
             self.x = np.append(self.x, record[:, [1, 2, 3]], axis=0)
             self.y = np.append(self.y, record[:, 0], axis=0)
 
+        self.y = np.float32(self.y.reshape(-1, 1) * g * 1e-3)
         self.len = self.x.shape[0]
         self.transform = transform
         self.target_transform = target_transform
