@@ -1,20 +1,21 @@
 import numpy as np
-from torch.utils.data import Dataset, random_split
 from scipy.constants import g
+from torch.utils.data import Dataset, random_split
+
 
 class CatheterDataset(Dataset):
     def __init__(self, time_series=False, transform=None, target_transform=None):
         self.x = np.empty((0, 3)) if not time_series else np.empty((0, 0, 3))
-        self.y = np.empty(0) if not time_series else np.empty((0, 1))
+        self.y = np.empty((0, 1)) if not time_series else np.empty((0, 1))
         file_dir = 'data/preprocess'
         file_cnt = 32
 
         for i in range(file_cnt):
             record = np.loadtxt(f'{file_dir}/{i + 1}.csv', delimiter=',', skiprows=1, usecols=(1, 2, 3, 4))
             self.x = np.append(self.x, record[:, [1, 2, 3]], axis=0)
-            self.y = np.append(self.y, record[:, 0], axis=0)
+            self.y = np.append(self.y, record[:, [0]], axis=0)
 
-        self.y = np.float32(self.y.reshape(-1, 1) * g * 1e-3)
+        self.y = np.float32(self.y * g * 1e-3)
         self.len = self.x.shape[0]
         self.transform = transform
         self.target_transform = target_transform

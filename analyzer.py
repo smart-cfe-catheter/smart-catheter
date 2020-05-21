@@ -47,7 +47,7 @@ for i in range(3):
     box_plot(dataset, i + 1)
 
 plt.figure(3)
-x, y = dataset[:][0], dataset[:][1]
+x, y = dataset[:][0], dataset[:][1].reshape(-1)
 x = transformer.fit_transform(x)
 data = np.hstack((x, np.atleast_2d(y).T))
 df = pd.DataFrame(data)

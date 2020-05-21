@@ -6,7 +6,6 @@ from sklearn.linear_model import LinearRegression, Lasso, Ridge
 from sklearn.metrics import mean_squared_error
 from sklearn.preprocessing import PolynomialFeatures
 
-import transforms
 from dataset import load_dataset
 
 parser = argparse.ArgumentParser(description='Smart Catheter Scikit-Trainer')
@@ -24,10 +23,10 @@ args = parser.parse_args()
 
 torch.manual_seed(args.seed)
 
-train, validation, test = load_dataset(target_transform=transforms.MassToForce())
-train_x, train_y = train[:][0], train[:][1]
-validation_x, validation_y = validation[:][0], validation[:][1]
-test_x, test_y = test[:][0], test[:][1]
+train, validation, test = load_dataset()
+train_x, train_y = train[:][0], train[:][1].reshape(-1)
+validation_x, validation_y = validation[:][0], validation[:][1].reshape(-1)
+test_x, test_y = test[:][0], test[:][1].reshape(-1)
 
 name = ['Linear Regression', 'Lasso', 'Ridge']
 train_losses = [[], [], []]

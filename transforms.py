@@ -5,6 +5,7 @@ class ToTensor(object):
     def __call__(self, x):
         return torch.Tensor(x)
 
+
 class Normalize(object):
     def __call__(self, x):
         x[0] = (x[0] - 0.004853980125330318) / 0.010268803725935298
