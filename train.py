@@ -6,7 +6,6 @@ from torch.nn import init
 from torch.nn import functional as f
 from torch.utils.data import DataLoader
 from torchvision import transforms
-from torch.optim.lr_scheduler import StepLR
 
 import models
 import transforms as tf
@@ -48,7 +47,7 @@ torch.manual_seed(args.seed)
 device = torch.device('cuda' if use_cuda else 'cpu')
 print(f'device selected: {device}\n')
 
-model = models.BasicNet().to(device).apply(weight_init)
+model = models.BasicNet().to(device).double().apply(weight_init)
 optimizer = torch.optim.Adam(model.parameters(), lr=args.lr)
 trainer = Trainer(model, optimizer=optimizer, device=device)
 
@@ -59,7 +58,6 @@ test_loader = DataLoader(dataset=test_data, batch_size=args.batch_size)
 
 train_losses = []
 validation_losses = []
-scheduler = StepLR(optimizer, step_size=1)
 for e in range(args.epochs):
     print(f'<Train Epoch #{e + 1}>')
     train_loss = trainer.train(train_loader, log_interval=args.log_interval)
@@ -68,7 +66,6 @@ for e in range(args.epochs):
     train_losses.append(train_loss)
     validation_losses.append(validation_loss)
     print(f'Train Loss: {train_loss} / Validation Loss: {validation_loss}\n')
-    scheduler.step()
 
 print(f'\n<Final Losses>\n'
       f'- train: {trainer.test(train_loader)}\n'

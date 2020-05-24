@@ -3,7 +3,7 @@ import torch
 
 class ToTensor(object):
     def __call__(self, x):
-        return torch.Tensor(x)
+        return torch.from_numpy(x)
 
 
 class Normalize(object):
