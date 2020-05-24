@@ -14,4 +14,3 @@ class BasicNet(nn.Module):
         x = f.relu(self.fc1(x))
         x = f.relu(self.fc2(x))
         return self.result_layer(x)
-

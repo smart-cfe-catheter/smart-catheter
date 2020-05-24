@@ -5,7 +5,6 @@ import torch
 from torch.nn import init
 from torch.nn import functional as f
 from torch.utils.data import DataLoader
-from torchvision import transforms
 
 import models
 import transforms as tf
