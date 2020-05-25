@@ -36,7 +36,7 @@ parser.add_argument('--save-model', action='store_true', default=False,
 parser.add_argument('--visualize', action='store_true', default=False,
                     help='For Showing the learning curve')
 parser.add_argument('--model-name', type=str, default='basicnet', metavar='N',
-                    help='Model going to be trained. There are basicnet and lenet')
+                    help='Model going to be trained. There are basicnet and fnet')
 parser.add_argument('--file-name', type=str, default='model', metavar='N',
                     help='File name where the model weight will be saved.')
 args = parser.parse_args()
@@ -46,7 +46,13 @@ torch.manual_seed(args.seed)
 device = torch.device('cuda' if use_cuda else 'cpu')
 print(f'device selected: {device}\n')
 
-model = models.BasicNet().to(device).double().apply(weight_init)
+model = models.BasicNet()
+if args.model_name == 'fnet':
+    model = models.FNet()
+
+print(f'Selected {model}')
+
+model = model.to(device).double().apply(weight_init)
 optimizer = torch.optim.Adam(model.parameters(), lr=args.lr)
 trainer = Trainer(model, optimizer=optimizer, device=device)
 
