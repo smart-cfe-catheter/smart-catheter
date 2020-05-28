@@ -1,9 +1,9 @@
-import time
 import argparse
+
 import matplotlib.pyplot as plt
 import torch
+from torch import optim
 from torch.nn import init
-from torch.nn import functional as f
 from torch.utils.data import DataLoader
 
 import models
@@ -19,47 +19,38 @@ def weight_init(model):
 
 
 parser = argparse.ArgumentParser(description='Smart Catheter Trainer')
-parser.add_argument('--batch-size', type=int, default=256, metavar='N',
-                    help='input batch size for training (default: 32)')
-parser.add_argument('--epochs', type=int, default=1, metavar='N',
-                    help='number of epochs to train (default: 1)')
-parser.add_argument('--lr', type=float, default=1e-6, metavar='LR',
-                    help='learning rate (default: 1e-6)')
-parser.add_argument('--no-cuda', action='store_true', default=False,
-                    help='disables CUDA training')
-parser.add_argument('--seed', type=int, default=1, metavar='S',
-                    help='random seed (default: 1)')
-parser.add_argument('--log-interval', type=int, default=100, metavar='N',
-                    help='how many batches to wait before logging training status')
-parser.add_argument('--save-model', action='store_true', default=False,
-                    help='For Saving the current Model')
-parser.add_argument('--visualize', action='store_true', default=False,
-                    help='For Showing the learning curve')
-parser.add_argument('--model-name', type=str, default='basicnet', metavar='N',
-                    help='Model going to be trained. There are basicnet and fnet')
-parser.add_argument('--file-name', type=str, default='model', metavar='N',
-                    help='File name where the model weight will be saved.')
+parser.add_argument('--batch-size', type=int, default=256)
+parser.add_argument('--epochs', type=int, default=50)
+parser.add_argument('--lr', type=float, default=0.1)
+parser.add_argument('--no-cuda', action='store_true', default=False)
+parser.add_argument('--log-interval', type=int, default=10)
+parser.add_argument('--save-model', action='store_true', default=False)
+parser.add_argument('--visualize', action='store_true', default=False)
+parser.add_argument('--model', type=str, default='BasicNet', choices=['BasicNet', 'FNet'])
+parser.add_argument('--device-ids', type=int, nargs='+', default=None)
+parser.add_argument('--checkpoint-dir', type=str, default='./checkpoint')
+parser.add_argument('--save-per-epoch', type=int, default=5)
 args = parser.parse_args()
 
 use_cuda = not args.no_cuda and torch.cuda.is_available()
-torch.manual_seed(args.seed)
+torch.manual_seed(1)
 device = torch.device('cuda' if use_cuda else 'cpu')
 print(f'device selected: {device}\n')
-
-model = models.BasicNet()
-if args.model_name == 'fnet':
-    model = models.FNet()
-
-print(f'Selected {model}')
-
-model = model.to(device).double().apply(weight_init)
-optimizer = torch.optim.Adam(model.parameters(), lr=args.lr)
-trainer = Trainer(model, optimizer=optimizer, device=device)
 
 train_data, validation_data, test_data = load_dataset(transform=tf.ToTensor())
 train_loader = DataLoader(dataset=train_data, batch_size=args.batch_size)
 validation_loader = DataLoader(dataset=validation_data, batch_size=args.batch_size)
 test_loader = DataLoader(dataset=test_data, batch_size=args.batch_size)
+
+model = models.BasicNet()
+if args.model == 'FNet':
+    model = models.FNet()
+
+print(f'Selected {model}')
+model = model.to(device).double().apply(weight_init)
+optimizer = optim.Adam(model.parameters(), lr=args.lr)
+scheduler = optim.lr_scheduler.ReduceLROnPlateau(optimizer=optimizer)
+trainer = Trainer(model, optimizer=optimizer, device=device)
 
 train_losses = []
 validation_losses = []
@@ -70,6 +61,7 @@ for e in range(args.epochs):
 
     train_losses.append(train_loss)
     validation_losses.append(validation_loss)
+    scheduler.step(validation_loss)
     print(f'Train Loss: {train_loss} / Validation Loss: {validation_loss}\n')
 
 print(f'\n<Final Losses>\n'
