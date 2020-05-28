@@ -6,6 +6,7 @@ import torch
 from torch import optim, nn
 from torch.nn import init
 from torch.utils.data import DataLoader
+from torchvision import transforms
 
 import models
 import transforms as tf
@@ -85,7 +86,7 @@ torch.manual_seed(1)
 device = torch.device('cuda' if use_cuda else 'cpu')
 print(f'device selected: {device}\n')
 
-train_data, validation_data, test_data = load_dataset(transform=tf.ToTensor())
+train_data, validation_data, test_data = load_dataset(transform=transforms.Compose([tf.ToTensor(), tf.NoiseCancel()]))
 train_loader = DataLoader(dataset=train_data, batch_size=args.batch_size)
 validation_loader = DataLoader(dataset=validation_data, batch_size=args.batch_size)
 test_loader = DataLoader(dataset=test_data, batch_size=args.batch_size)
