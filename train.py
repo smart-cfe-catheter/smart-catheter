@@ -1,8 +1,9 @@
 import argparse
+import os
 
 import matplotlib.pyplot as plt
 import torch
-from torch import optim
+from torch import optim, nn
 from torch.nn import init
 from torch.utils.data import DataLoader
 
@@ -18,6 +19,53 @@ def weight_init(model):
         init.xavier_normal_(model.weight.data)
 
 
+def save_checkpoint(tag, epoch, model, optimizer, scheduler):
+    print('Snapshot Checkpoint...')
+    if args.device_ids and len(args.device_ids) > 1:
+        model_state_dict = model.module.state_dict()
+    else:
+        model_state_dict = model.state_dict()
+
+    torch.save({
+        'last_epoch': epoch,
+        'model_state_dict': model_state_dict,
+        'optimizer_state_dict': optimizer.state_dict(),
+        'scheduler_state_dict': scheduler.state_dict()
+    }, os.path.join(args.checkpoint_dir, 'checkpoint_' + str(tag) + '.pth'))
+
+
+def load_checkpoint(args, model, optimizer, scheduler):
+    last_epoch = 0
+    if os.path.isdir(args.checkpoint_dir) is False:
+        os.makedirs(args.checkpoint_dir)
+        return last_epoch
+
+    files = os.listdir(args.checkpoint_dir)
+    files.sort(key=len)
+
+    if len(files) == 0:
+        return last_epoch
+
+    load_dir = os.path.join(args.checkpoint_dir, files[-1])
+    if os.path.isfile(load_dir) is True:
+        loaded_state_dict = torch.load(load_dir, map_location='cpu')
+        print("Checkpoint loaded from " + load_dir)
+
+        last_epoch = loaded_state_dict['last_epoch']
+        optimizer.load_state_dict(loaded_state_dict['optimizer_state_dict'])
+        scheduler.load_state_dict(loaded_state_dict['scheduler_state_dict'])
+
+        try:
+            model.load_state_dict(loaded_state_dict['model_state_dict'])
+        except RuntimeError:
+            model.module.load_state_dict(loaded_state_dict['model_state_dict'])
+
+    else:
+        print("Checkpoint load failed")
+
+    return last_epoch
+
+
 parser = argparse.ArgumentParser(description='Smart Catheter Trainer')
 parser.add_argument('--batch-size', type=int, default=256)
 parser.add_argument('--epochs', type=int, default=50)
@@ -28,7 +76,7 @@ parser.add_argument('--save-model', action='store_true', default=False)
 parser.add_argument('--visualize', action='store_true', default=False)
 parser.add_argument('--model', type=str, default='BasicNet', choices=['BasicNet', 'FNet'])
 parser.add_argument('--device-ids', type=int, nargs='+', default=None)
-parser.add_argument('--checkpoint-dir', type=str, default='./checkpoint')
+parser.add_argument('--checkpoint-dir', type=str, default='./checkpoints/test')
 parser.add_argument('--save-per-epoch', type=int, default=5)
 args = parser.parse_args()
 
@@ -37,47 +85,45 @@ torch.manual_seed(1)
 device = torch.device('cuda' if use_cuda else 'cpu')
 print(f'device selected: {device}\n')
 
-train_data, validation_data, test_data = load_dataset(transform=tf.ToTensor())
+train_data, validation_data, _ = load_dataset(transform=tf.ToTensor())
 train_loader = DataLoader(dataset=train_data, batch_size=args.batch_size)
 validation_loader = DataLoader(dataset=validation_data, batch_size=args.batch_size)
-test_loader = DataLoader(dataset=test_data, batch_size=args.batch_size)
 
-model = models.BasicNet()
-if args.model == 'FNet':
-    model = models.FNet()
-
-print(f'Selected {model}')
+model = models.BasicNet() if args.model == 'BasicNet' else models.FNet()
+if args.device_ids and use_cuda and len(args.device_ids) > 1:
+    model = nn.DataParallel(model, device_ids=[i for i in range(len(args.device_ids))])
 model = model.to(device).double().apply(weight_init)
+
 optimizer = optim.Adam(model.parameters(), lr=args.lr)
 scheduler = optim.lr_scheduler.ReduceLROnPlateau(optimizer=optimizer)
+last_epoch = load_checkpoint(args, model, optimizer, scheduler)
+
 trainer = Trainer(model, optimizer=optimizer, device=device)
 
 train_losses = []
 validation_losses = []
-for e in range(args.epochs):
-    print(f'<Train Epoch #{e + 1}>')
+for e in range(last_epoch + 1, args.epochs + 1):
+    print(f'<Train Epoch #{e}>')
     train_loss = trainer.train(train_loader, log_interval=args.log_interval)
     validation_loss = trainer.test(validation_loader)
 
     train_losses.append(train_loss)
     validation_losses.append(validation_loss)
     scheduler.step(validation_loss)
+
+    if args.save_model and e % args.save_per_epoch == 0:
+        save_checkpoint(e, e, model, optimizer, scheduler)
     print(f'Train Loss: {train_loss} / Validation Loss: {validation_loss}\n')
 
-print(f'\n<Final Losses>\n'
-      f'- train: {trainer.test(train_loader)}\n'
-      f'- validation: {trainer.test(validation_loader)}\n'
-      f'- test: {trainer.test(test_loader)}')
-
-plt.plot(range(1, args.epochs + 1), train_losses, label='train loss')
-plt.plot(range(1, args.epochs + 1), validation_losses, label='validation loss')
+plt.plot(range(last_epoch + 1, args.epochs + 1), train_losses, label='train loss')
+plt.plot(range(last_epoch + 1, args.epochs + 1), validation_losses, label='validation loss')
 plt.xlabel('Epoch')
 plt.ylabel('Loss')
 plt.legend(loc=2)
-if args.visualize:
-    plt.show()
 
 if args.save_model:
-    torch.save(model.state_dict(), f'models/{args.file_name}.pt')
-    plt.savefig(f'figures/{args.file_name}.png', dpi=300)
+    save_checkpoint('final', args.epochs, model, optimizer, scheduler)
+    plt.savefig(f'{args.checkpoint_dir}/learning_curve.png', dpi=300)
 
+if args.visualize:
+    plt.show()

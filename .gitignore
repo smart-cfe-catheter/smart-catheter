@@ -148,6 +148,5 @@ target/
 data/
 .idea/
 results/
-figures/
-models/
 nohup.out
+checkpoints/
