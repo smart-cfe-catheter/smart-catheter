@@ -85,9 +85,10 @@ torch.manual_seed(1)
 device = torch.device('cuda' if use_cuda else 'cpu')
 print(f'device selected: {device}\n')
 
-train_data, validation_data, _ = load_dataset(transform=tf.ToTensor())
+train_data, validation_data, test_data = load_dataset(transform=tf.ToTensor())
 train_loader = DataLoader(dataset=train_data, batch_size=args.batch_size)
 validation_loader = DataLoader(dataset=validation_data, batch_size=args.batch_size)
+test_loader = DataLoader(dataset=test_data, batch_size=args.batch_size)
 
 model = models.BasicNet() if args.model == 'BasicNet' else models.FNet()
 if args.device_ids and use_cuda and len(args.device_ids) > 1:
@@ -114,6 +115,7 @@ for e in range(last_epoch + 1, args.epochs + 1):
     if args.save_model and e % args.save_per_epoch == 0:
         save_checkpoint(e, e, model, optimizer, scheduler)
     print(f'Train Loss: {train_loss} / Validation Loss: {validation_loss}\n')
+print(f'\nTest Loss: {trainer.test(test_loader)}')
 
 plt.plot(range(last_epoch + 1, args.epochs + 1), train_losses, label='train loss')
 plt.plot(range(last_epoch + 1, args.epochs + 1), validation_losses, label='validation loss')

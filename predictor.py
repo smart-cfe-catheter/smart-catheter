@@ -5,7 +5,7 @@ import numpy as np
 import torch
 from scipy.constants import g
 
-from models import BasicNet
+from models import BasicNet, FNet
 
 
 def import_data(num):
@@ -14,19 +14,20 @@ def import_data(num):
 
 
 parser = argparse.ArgumentParser(description='PyTorch MNIST Example')
-parser.add_argument('--model-name', type=str, default='basicnet', metavar='N',
-                    help='Model going to be trained. There are basicnet and lenet')
-parser.add_argument('--file-name', type=str, default='models/test.pt', metavar='N',
-                    help='File name where the model weight will be saved.')
-parser.add_argument('--visualize', action='store_true', default=False,
-                    help='For Showing the predict results')
-parser.add_argument('--predict', type=int, default=1, metavar='N',
-                    help='# of datas for prediction (default: 1)')
+parser.add_argument('--model', type=str, default='BasicNet', choices=['BasicNet', 'FNet'])
+parser.add_argument('--file-name', type=str, default='checkpoints/test/checkpoint_final.pth')
+parser.add_argument('--visualize', action='store_true', default=False)
+parser.add_argument('--predict', type=int, default=1)
 args = parser.parse_args()
 
 torch.manual_seed(1)
-model = BasicNet().double()
-model.load_state_dict(torch.load(args.file_name, map_location=torch.device('cpu')))
+model = BasicNet() if args.model == 'BasicNet' else FNet()
+model = model.double()
+loaded_state_dict = torch.load(args.file_name, map_location='cpu')
+try:
+    model.load_state_dict(loaded_state_dict['model_state_dict'])
+except RuntimeError:
+    model.module.load_state_dict(loaded_state_dict['model_state_dict'])
 model.eval()
 
 for i in range(1, args.predict + 1):
