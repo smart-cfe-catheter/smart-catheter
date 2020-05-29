@@ -20,7 +20,7 @@ def weight_init(model):
         init.kaiming_normal_(model.weight.data)
 
 
-def save_checkpoint(tag, epoch, model, optimizer, scheduler):
+def save_checkpoint(tag, args, epoch, model, optimizer, scheduler):
     print('Snapshot Checkpoint...')
     if args.device_ids and len(args.device_ids) > 1:
         model_state_dict = model.module.state_dict()
@@ -67,71 +67,75 @@ def load_checkpoint(args, model, optimizer, scheduler):
     return last_epoch
 
 
-parser = argparse.ArgumentParser(description='Smart Catheter Trainer')
-parser.add_argument('--batch-size', type=int, default=256)
-parser.add_argument('--epochs', type=int, default=50)
-parser.add_argument('--lr', type=float, default=0.1)
-parser.add_argument('--no-cuda', action='store_true', default=False)
-parser.add_argument('--log-interval', type=int, default=10)
-parser.add_argument('--save-model', action='store_true', default=False)
-parser.add_argument('--visualize', action='store_true', default=False)
-parser.add_argument('--model', type=str, default='BasicNet', choices=['BasicNet', 'FNet'])
-parser.add_argument('--device-ids', type=int, nargs='+', default=None)
-parser.add_argument('--checkpoint-dir', type=str, default='./checkpoints/test')
-parser.add_argument('--save-per-epoch', type=int, default=5)
-parser.add_argument('--noise-cancel', action='store_true', default=False)
-parser.add_argument('--reset', action='store_true', default=False)
-args = parser.parse_args()
+def main():
+    parser = argparse.ArgumentParser(description='Smart Catheter Trainer')
+    parser.add_argument('--batch-size', type=int, default=256)
+    parser.add_argument('--epochs', type=int, default=50)
+    parser.add_argument('--lr', type=float, default=0.1)
+    parser.add_argument('--no-cuda', action='store_true', default=False)
+    parser.add_argument('--log-interval', type=int, default=10)
+    parser.add_argument('--save-model', action='store_true', default=False)
+    parser.add_argument('--visualize', action='store_true', default=False)
+    parser.add_argument('--model', type=str, default='BasicNet', choices=['BasicNet', 'FNet'])
+    parser.add_argument('--device-ids', type=int, nargs='+', default=None)
+    parser.add_argument('--checkpoint-dir', type=str, default='./checkpoints/test')
+    parser.add_argument('--save-per-epoch', type=int, default=5)
+    parser.add_argument('--noise-cancel', action='store_true', default=False)
+    parser.add_argument('--reset', action='store_true', default=False)
+    args = parser.parse_args()
 
-use_cuda = not args.no_cuda and torch.cuda.is_available()
-torch.manual_seed(1)
-device = torch.device('cuda' if use_cuda else 'cpu')
-print(f'device selected: {device}\n')
+    use_cuda = not args.no_cuda and torch.cuda.is_available()
+    torch.manual_seed(1)
+    device = torch.device('cuda' if use_cuda else 'cpu')
+    print(f'device selected: {device}\n')
 
-tfs = [tf.ToTensor()]
-if args.noise_cancel:
-    tfs.append(tf.NoiseCancel())
-train_data, validation_data, test_data = load_dataset(transform=transforms.Compose(tfs))
-train_loader = DataLoader(dataset=train_data, batch_size=args.batch_size, shuffle=True)
-validation_loader = DataLoader(dataset=validation_data, batch_size=args.batch_size)
-test_loader = DataLoader(dataset=test_data, batch_size=args.batch_size)
+    tfs = [tf.ToTensor()]
+    if args.noise_cancel:
+        tfs.append(tf.NoiseCancel())
+    train_data, validation_data, test_data = load_dataset(transform=transforms.Compose(tfs))
+    train_loader = DataLoader(dataset=train_data, batch_size=args.batch_size, shuffle=True)
+    validation_loader = DataLoader(dataset=validation_data, batch_size=args.batch_size)
+    test_loader = DataLoader(dataset=test_data, batch_size=args.batch_size)
 
-model = models.BasicNet() if args.model == 'BasicNet' else models.FNet()
-if args.device_ids and use_cuda and len(args.device_ids) > 1:
-    model = nn.DataParallel(model, device_ids=[i for i in range(len(args.device_ids))])
-model = model.to(device).double().apply(weight_init)
+    model = models.BasicNet() if args.model == 'BasicNet' else models.FNet()
+    if args.device_ids and use_cuda and len(args.device_ids) > 1:
+        model = nn.DataParallel(model, device_ids=[i for i in range(len(args.device_ids))])
+    model = model.to(device).double().apply(weight_init)
 
-optimizer = optim.Adam(model.parameters(), lr=args.lr)
-scheduler = optim.lr_scheduler.ReduceLROnPlateau(optimizer=optimizer)
-last_epoch = load_checkpoint(args, model, optimizer, scheduler) if not args.reset else 0
+    optimizer = optim.Adam(model.parameters(), lr=args.lr)
+    scheduler = optim.lr_scheduler.ReduceLROnPlateau(optimizer=optimizer)
+    last_epoch = load_checkpoint(args, model, optimizer, scheduler) if not args.reset else 0
 
-trainer = Trainer(model, optimizer=optimizer, device=device)
+    trainer = Trainer(model, optimizer=optimizer, device=device)
 
-train_losses = []
-validation_losses = []
-for e in range(last_epoch + 1, args.epochs + 1):
-    print(f'<Train Epoch #{e}>')
-    train_loss = trainer.train(train_loader, log_interval=args.log_interval)
-    validation_loss = trainer.test(validation_loader)
+    train_losses = []
+    validation_losses = []
+    for e in range(last_epoch + 1, args.epochs + 1):
+        print(f'<Train Epoch #{e}>')
+        train_loss = trainer.train(train_loader, log_interval=args.log_interval)
+        validation_loss = trainer.test(validation_loader)
 
-    train_losses.append(train_loss)
-    validation_losses.append(validation_loss)
-    scheduler.step(validation_loss)
+        train_losses.append(train_loss)
+        validation_losses.append(validation_loss)
+        scheduler.step(validation_loss)
 
-    if args.save_model and e % args.save_per_epoch == 0:
-        save_checkpoint(e, e, model, optimizer, scheduler)
-    print(f'Train Loss: {train_loss} / Validation Loss: {validation_loss}\n')
-print(f'\nTest Loss: {trainer.test(test_loader)}')
+        if args.save_model and e % args.save_per_epoch == 0:
+            save_checkpoint(e, args, e, model, optimizer, scheduler)
+        print(f'Train Loss: {train_loss} / Validation Loss: {validation_loss}\n')
+    print(f'\nTest Loss: {trainer.test(test_loader)}')
 
-plt.plot(range(last_epoch + 1, args.epochs + 1), train_losses, label='train loss')
-plt.plot(range(last_epoch + 1, args.epochs + 1), validation_losses, label='validation loss')
-plt.xlabel('Epoch')
-plt.ylabel('Loss')
-plt.legend(loc=2)
+    plt.plot(range(last_epoch + 1, args.epochs + 1), train_losses, label='train loss')
+    plt.plot(range(last_epoch + 1, args.epochs + 1), validation_losses, label='validation loss')
+    plt.xlabel('Epoch')
+    plt.ylabel('Loss')
+    plt.legend(loc=2)
 
-if args.save_model:
-    save_checkpoint('final', args.epochs, model, optimizer, scheduler)
-    plt.savefig(f'{args.checkpoint_dir}/learning-curve.png', dpi=300)
+    if args.save_model:
+        save_checkpoint('final', args, args.epochs, model, optimizer, scheduler)
+        plt.savefig(f'{args.checkpoint_dir}/learning-curve.png', dpi=300)
 
-if args.visualize:
-    plt.show()
+    if args.visualize:
+        plt.show()
+
+
+main()
