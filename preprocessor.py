@@ -5,7 +5,7 @@ def get_reference_value(table):
     return table.at[0, 'sensor1'], table.at[0, 'sensor2'], table.at[0, 'sensor3']
 
 
-record_count = 32
+record_count = 89
 min_val = 1500
 
 for i in range(record_count):
@@ -23,13 +23,6 @@ for i in range(record_count):
     for end in x_data.index:
         start_date = x_data.at[start, 'timestamp']
         end_date = x_data.at[end, 'timestamp']
-
-        if x_data.at[end, 'sensor1'] < min_val:
-            x_data.at[end, 'sensor1'] *= 1e9
-        if x_data.at[end, 'sensor2'] < min_val:
-            x_data.at[end, 'sensor2'] *= 1e9
-        if x_data.at[end, 'sensor3'] < min_val:
-            x_data.at[end, 'sensor3'] *= 1e9
 
         if start_date != end_date or end is x_data.index[-1]:
             count = (end - start + 1) if end is x_data.index[-1] else (end - start)
