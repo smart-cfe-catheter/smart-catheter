@@ -33,8 +33,9 @@ def main():
     for i in range(1, 33):
         x_data, y_data = import_data(i)
         y_pred = model(x_data).view(-1)
-        loss = torch.nn.functional.mse_loss(y_data, y_pred)
-        print(f'Prediction {i} loss : {loss.data.numpy()}')
+        loss1 = torch.nn.functional.l1_loss(y_data, y_pred)
+        loss2 = torch.nn.functional.mse_loss(y_data, y_pred)
+        print(f'Prediction {i} L1 loss : {loss1.data.numpy()}, L2 loss : {loss2.data.numpy()}')
 
         x_coors = range(0, y_data.shape[0])
         plt.plot(x_coors, y_data.data, label='real value')
