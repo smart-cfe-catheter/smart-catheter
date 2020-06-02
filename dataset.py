@@ -8,10 +8,10 @@ class CatheterDataset(Dataset):
         x = np.empty((0, 3)) if not time_series else np.empty((0, 0, 3))
         y = np.empty((0, 1)) if not time_series else np.empty((0, 1))
         file_dir = 'data/preprocess'
-        file_cnt = 89
+        file_cnt = 84
 
         for i in range(file_cnt):
-            record = np.loadtxt(f'{file_dir}/{i + 1}.csv', delimiter=',', skiprows=1, usecols=(1, 2, 3, 4))
+            record = np.loadtxt(f'{file_dir}/{i + 1}.csv', delimiter=',', usecols=(0, 1, 2, 3))
             x = np.append(x, record[:, [1, 2, 3]], axis=0)
             y = np.append(y, record[:, [0]], axis=0)
 

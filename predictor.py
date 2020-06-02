@@ -9,7 +9,7 @@ from models import BasicNet, FNet
 
 
 def import_data(num):
-    record = np.loadtxt(f'data/preprocess/{num}.csv', delimiter=',', skiprows=1, usecols=(1, 2, 3, 4))
+    record = np.loadtxt(f'data/preprocess/{num}.csv', delimiter=',', usecols=(0, 1, 2, 3))
     return torch.from_numpy(record[:, [1, 2, 3]]), torch.from_numpy(record[:, 0] * g * 1e-3)
 
 

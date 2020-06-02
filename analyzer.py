@@ -21,9 +21,12 @@ def main():
     dataset = CatheterDataset()
 
     for i in range(3):
-        print(f'<Sensor {i}>')
-        print(f'- Mean: {np.mean(dataset[:][0][:, i])}')
-        print(f'- Std: {np.std(dataset[:][0][:, i])}\n')
+        data = dataset[:][0][:, i]
+        print(f'<Sensor {i + 1}>')
+        print(f'- Mean: {np.mean(data)}')
+        print(f'- Std: {np.std(data)}')
+        print(f'- Median: {np.median(data)}')
+        print(f'- MAD: {np.median(np.abs(data - np.median(data)))}')
 
     plt.figure(1)
     for i in range(3):

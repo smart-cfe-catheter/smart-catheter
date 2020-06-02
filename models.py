@@ -9,7 +9,7 @@ class BasicNet(nn.Module):
 
         self.fc1 = nn.Linear(3, 3)
         self.fc2 = nn.Linear(3, 3)
-        self.result_layer = nn.Linear(3, 1, bias=False)
+        self.result_layer = nn.Linear(3, 1)
 
     def forward(self, x):
         x = f.leaky_relu(self.fc1(x))
@@ -30,7 +30,7 @@ class FNet(nn.Module):
 
         self.fc1 = nn.Linear(self.degree + 1, self.degree + 1)
         self.fc2 = nn.Linear(self.degree + 1, self.degree + 1)
-        self.result_layer = nn.Linear(self.degree + 1, 1, bias=False)
+        self.result_layer = nn.Linear(self.degree + 1, 1)
 
     def forward(self, x):
         x = self.Fh(x)
