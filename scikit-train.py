@@ -1,8 +1,9 @@
 import argparse
-import numpy as np
+
 import matplotlib.pyplot as plt
+import numpy as np
 import torch
-from sklearn.linear_model import LassoCV, RidgeCV
+from sklearn.linear_model import RidgeCV
 from sklearn.metrics import mean_squared_error
 from sklearn.preprocessing import PolynomialFeatures
 
@@ -21,7 +22,7 @@ args = parser.parse_args()
 
 torch.manual_seed(args.seed)
 
-train, test = load_dataset(cv=True)
+train, test = load_dataset(no_validation=True)
 train_x, train_y = train[:][0], train[:][1].reshape(-1)
 test_x, test_y = test[:][0], test[:][1].reshape(-1)
 

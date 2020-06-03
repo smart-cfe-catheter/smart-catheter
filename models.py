@@ -48,3 +48,16 @@ class FNet(nn.Module):
     def __str__(self):
         return 'FNet'
 
+
+class RNNNet(nn.Module):
+    def __init__(self):
+        super(RNNNet, self).__init__()
+
+        self.rnn = nn.RNN(4, 4)
+        self.fc = nn.Linear(4, 1)
+
+    def forward(self, x, h):
+        x, h = self.rnn(x, h)
+        x = self.fc(x)
+
+        return x, h
