@@ -5,7 +5,7 @@ import numpy as np
 import torch
 from scipy.constants import g
 
-from models import BasicNet, FNet
+import models
 
 
 def import_data(num):
@@ -15,13 +15,19 @@ def import_data(num):
 
 def main():
     parser = argparse.ArgumentParser(description='PyTorch MNIST Example')
-    parser.add_argument('--model', type=str, default='BasicNet', choices=['BasicNet', 'FNet'])
+    parser.add_argument('--model', type=str, default='BasicNet', choices=['BasicNet', 'FNet', 'RNNNet'])
     parser.add_argument('--file-name', type=str, default='checkpoints/test/checkpoint_final.pth')
     parser.add_argument('--result-dir', type=str, default='results')
     args = parser.parse_args()
 
     torch.manual_seed(1)
-    model = BasicNet() if args.model == 'BasicNet' else FNet()
+    model = None
+    if args.model == 'BasicNet':
+        model = models.BasicNet()
+    elif args.model == 'FNet':
+        model = models.FNet()
+    elif args.model == 'RNNNet':
+        model = models.RNNNet()
     model = model.double()
     loaded_state_dict = torch.load(args.file_name, map_location='cpu')
     try:

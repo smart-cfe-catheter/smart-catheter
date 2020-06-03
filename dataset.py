@@ -46,10 +46,11 @@ class CatheterDataset(Dataset):
     def __getitem__(self, idx):
         x, y = self.x[idx], self.y[idx]
 
-        if self.transform:
-            x = self.transform(x)
-        if self.target_transform:
-            y = self.target_transform(y)
+        if not self.time_series:
+            if self.transform:
+                x = self.transform(x)
+            if self.target_transform:
+                y = self.target_transform(y)
 
         return x, y
 

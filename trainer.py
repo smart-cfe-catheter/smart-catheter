@@ -2,22 +2,41 @@ import torch
 from torch.nn import functional as f
 
 
+def repackage_hidden(h):
+    if isinstance(h, torch.Tensor):
+        return h.detach()
+    else:
+        return tuple(repackage_hidden(v) for v in h)
+
+
 class Trainer:
-    def __init__(self, model, optimizer, device):
+    def __init__(self, model, time_series, optimizer, device):
         self.model = model
+        self.time_series = time_series
         self.optimizer = optimizer
         self.device = device
+
+    def train_epoch(self, x, y, h=None, reduction='mean'):
+        x, y = x.to(self.device), y.to(self.device)
+        self.optimizer.zero_grad()
+
+        if self.time_series:
+            h = repackage_hidden(h)
+            output, h = self.model(x, h)
+        else:
+            output = self.model(x)
+        loss = f.mse_loss(output, y, reduction=reduction)
+        return loss, h
 
     def train(self, loader, log_interval=100):
         self.model.train()
         total_loss = 0.0
 
+        h = None
         for batch, (x, y) in enumerate(loader):
-            x, y = x.to(self.device), y.to(self.device)
-            self.optimizer.zero_grad()
-
-            output = self.model(x)
-            loss = f.mse_loss(output, y)
+            if self.time_series and batch == 0:
+                h = torch.zeros(1, x.shape[1], 4).to(self.device).double()
+            loss, h = self.train_epoch(x, y, h=h)
             total_loss += loss.item() * len(x)
             loss.backward()
 
@@ -31,11 +50,12 @@ class Trainer:
         self.model.eval()
         total_loss = 0.0
 
+        h = None
         with torch.no_grad():
-            for x, y in loader:
-                x, y = x.to(self.device), y.to(self.device)
-
-                output = self.model(x)
-                total_loss += f.mse_loss(output, y, reduction='sum').item()
+            for batch, (x, y) in enumerate(loader):
+                if self.time_series and batch == 0:
+                    h = torch.zeros(1, x.shape[1], 4).to(self.device).double()
+                loss, h = self.train_epoch(x, y, h=h, reduction='sum')
+                total_loss += loss.item()
 
         return total_loss / len(loader.dataset)

@@ -76,7 +76,7 @@ def main():
     parser.add_argument('--log-interval', type=int, default=10)
     parser.add_argument('--save-model', action='store_true', default=False)
     parser.add_argument('--visualize', action='store_true', default=False)
-    parser.add_argument('--model', type=str, default='BasicNet', choices=['BasicNet', 'FNet'])
+    parser.add_argument('--model', type=str, default='BasicNet', choices=['BasicNet', 'FNet', 'RNNNet'])
     parser.add_argument('--device-ids', type=int, nargs='+', default=None)
     parser.add_argument('--checkpoint-dir', type=str, default='./checkpoints/test')
     parser.add_argument('--save-per-epoch', type=int, default=5)
@@ -84,6 +84,7 @@ def main():
     parser.add_argument('--reset', action='store_true', default=False)
     args = parser.parse_args()
 
+    time_series = (args.model == 'RNN')
     use_cuda = not args.no_cuda and torch.cuda.is_available()
     torch.manual_seed(1)
     device = torch.device('cuda' if use_cuda else 'cpu')
@@ -92,12 +93,18 @@ def main():
     tfs = [tf.ToTensor()]
     if args.noise_cancel:
         tfs.append(tf.NoiseCancel())
-    train_data, validation_data, test_data = load_dataset(transform=transforms.Compose(tfs))
-    train_loader = DataLoader(dataset=train_data, batch_size=args.batch_size, shuffle=True)
+    train_data, validation_data, test_data = load_dataset(time_series=time_series, transform=transforms.Compose(tfs))
+    train_loader = DataLoader(dataset=train_data, batch_size=args.batch_size, shuffle=not time_series)
     validation_loader = DataLoader(dataset=validation_data, batch_size=args.batch_size)
     test_loader = DataLoader(dataset=test_data, batch_size=args.batch_size)
 
-    model = models.BasicNet() if args.model == 'BasicNet' else models.FNet()
+    model = None
+    if args.model == 'BasicNet':
+        model = models.BasicNet()
+    elif args.model == 'FNet':
+        model = models.FNet()
+    elif args.model == 'RNNNet':
+        model = models.RNNNet()
     if args.device_ids and use_cuda and len(args.device_ids) > 1:
         model = nn.DataParallel(model, device_ids=[i for i in range(len(args.device_ids))])
     model = model.to(device).double().apply(weight_init)
@@ -106,7 +113,7 @@ def main():
     scheduler = optim.lr_scheduler.ReduceLROnPlateau(optimizer=optimizer)
     last_epoch = load_checkpoint(args, model, optimizer, scheduler) if not args.reset else 0
 
-    trainer = Trainer(model, optimizer=optimizer, device=device)
+    trainer = Trainer(model, time_series=time_series, optimizer=optimizer, device=device)
 
     train_losses = []
     validation_losses = []
