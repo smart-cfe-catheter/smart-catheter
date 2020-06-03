@@ -84,7 +84,7 @@ def main():
     parser.add_argument('--reset', action='store_true', default=False)
     args = parser.parse_args()
 
-    time_series = (args.model == 'RNN')
+    time_series = (args.model == 'RNNNet')
     use_cuda = not args.no_cuda and torch.cuda.is_available()
     torch.manual_seed(1)
     device = torch.device('cuda' if use_cuda else 'cpu')

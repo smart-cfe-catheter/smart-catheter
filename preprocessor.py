@@ -1,6 +1,5 @@
 import numpy as np
 import pandas as pd
-from scipy.ndimage import gaussian_filter1d
 
 
 def get_reference_value(table):
@@ -48,7 +47,6 @@ for i in range(record_count):
 
     raw_data = raw_data.drop(['timestamp'], axis=1)
     data = raw_data.to_numpy()
-    data = gaussian_filter1d(data, 2, axis=0)
 
     np.savetxt(f'data/preprocess/{global_cnt}.csv', data, delimiter=',')
     print(f'{global_cnt} record preprocess finished')
