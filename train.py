@@ -128,13 +128,13 @@ def main():
 
         if args.save_model and e % args.save_per_epoch == 0:
             save_checkpoint(e, args, e, model, optimizer, scheduler)
-        print(f'Train Loss: {train_loss} / Validation Loss: {validation_loss}\n')
-    print(f'\nTest Loss: {trainer.test(test_loader)}')
+        print(f'Train Loss: {train_loss}N / Validation Loss: {validation_loss}N\n')
+    print(f'\nTest Loss: {trainer.test(test_loader)}N')
 
     plt.plot(range(last_epoch + 1, args.epochs + 1), train_losses, label='train loss')
     plt.plot(range(last_epoch + 1, args.epochs + 1), validation_losses, label='validation loss')
     plt.xlabel('Epoch')
-    plt.ylabel('Loss')
+    plt.ylabel('Loss [N]')
     plt.legend(loc=2)
 
     if args.save_model:

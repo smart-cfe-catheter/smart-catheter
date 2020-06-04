@@ -35,7 +35,7 @@ class Trainer:
         h = None
         for batch, (x, y) in enumerate(loader):
             if self.time_series and batch == 0:
-                h = torch.zeros(1, x.shape[1], 4).to(self.device).double()
+                h = torch.zeros(5, x.shape[1], 3).to(self.device).double()
             loss, h = self.train_epoch(x, y, h=h)
             total_loss += loss.item() * len(x)
             loss.backward()
@@ -54,7 +54,7 @@ class Trainer:
         with torch.no_grad():
             for batch, (x, y) in enumerate(loader):
                 if self.time_series and batch == 0:
-                    h = torch.zeros(1, x.shape[1], 4).to(self.device).double()
+                    h = torch.zeros(5, x.shape[1], 3).to(self.device).double()
                 loss, h = self.train_epoch(x, y, h=h, reduction='sum')
                 total_loss += loss.item()
 

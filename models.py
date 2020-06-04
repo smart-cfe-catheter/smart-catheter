@@ -53,8 +53,8 @@ class RNNNet(nn.Module):
     def __init__(self):
         super(RNNNet, self).__init__()
 
-        self.rnn = nn.RNN(4, 4)
-        self.fc = nn.Linear(4, 1)
+        self.rnn = nn.GRU(3, 3, 5)
+        self.fc = nn.Linear(3, 1)
 
     def forward(self, x, h):
         x, h = self.rnn(x, h)

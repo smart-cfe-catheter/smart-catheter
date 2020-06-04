@@ -18,7 +18,7 @@ def box_plot(data, title):
 
 def main():
     torch.manual_seed(1)
-    dataset = CatheterDataset()
+    dataset = CatheterDataset(folders=['train', 'validation', 'test'])
 
     for i in range(3):
         data = dataset[:][0][:, i]
@@ -26,7 +26,6 @@ def main():
         print(f'- Mean: {np.mean(data)}')
         print(f'- Std: {np.std(data)}')
         print(f'- Median: {np.median(data)}')
-        print(f'- MAD: {np.median(np.abs(data - np.median(data)))}')
 
     plt.figure(1)
     for i in range(3):
