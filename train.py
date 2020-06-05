@@ -74,7 +74,7 @@ def main():
     parser.add_argument('--log-interval', type=int, default=10)
     parser.add_argument('--save-model', action='store_true', default=False)
     parser.add_argument('--visualize', action='store_true', default=False)
-    parser.add_argument('--model', type=str, default='BasicNet', choices=['BasicNet', 'FNet', 'RNNNet', 'SigDNN'])
+    parser.add_argument('--model', type=str, default='BasicDNN', choices=['BasicDNN', 'HFDNN', 'BasicRNN', 'SigDNN'])
     parser.add_argument('--device-ids', type=int, nargs='+', default=None)
     parser.add_argument('--checkpoint-dir', type=str, default='./checkpoints/test')
     parser.add_argument('--layer-cnt', type=int, default=2)
@@ -83,8 +83,8 @@ def main():
     parser.add_argument('--reset', action='store_true', default=False)
     args = parser.parse_args()
 
-    rnn = (args.model == 'RNNNet')
-    time_series = (args.model == 'RNNNet' or args.model == 'SigDNN')
+    rnn = (args.model == 'BasicRNN')
+    time_series = (args.model == 'BasicRNN' or args.model == 'SigDNN')
     window = 10 if args.model == 'SigDNN' else None
     use_cuda = not args.no_cuda and torch.cuda.is_available()
     torch.manual_seed(1)
@@ -96,10 +96,10 @@ def main():
     validation_loader = DataLoader(dataset=validation_data, batch_size=args.batch_size)
     test_loader = DataLoader(dataset=test_data, batch_size=args.batch_size)
 
-    model = {'BasicNet': models.BasicNet(args.layer_cnt),
-             'FNet': models.FNet(args.layer_cnt),
-             'RNNNet': models.RNNNet(args.layer_cnt),
-             'SigDNN': models.SigDNN(args.layer_cnt)}.get(args.model, 'BasicNet')
+    model = {'BasicDNN': models.BasicDNN(args.layer_cnt),
+             'HFDNN': models.HFDNN(args.layer_cnt),
+             'BasicRNN': models.BasicRNN(args.layer_cnt),
+             'SigDNN': models.SigDNN(args.layer_cnt)}.get(args.model, 'BasicDNN')
     if args.device_ids and use_cuda and len(args.device_ids) > 1:
         model = nn.DataParallel(model, device_ids=[i for i in range(len(args.device_ids))])
     model = model.to(device).double().apply(weight_init)

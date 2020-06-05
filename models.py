@@ -3,9 +3,9 @@ from torch import nn
 from torch.nn import functional as f
 
 
-class BasicNet(nn.Module):
+class BasicDNN(nn.Module):
     def __init__(self, layer_cnt):
-        super(BasicNet, self).__init__()
+        super(BasicDNN, self).__init__()
 
         self.decoder = nn.Linear(3, 1)
         layers = [nn.Sequential(nn.Linear(3, 3), nn.ReLU()) for _ in range(layer_cnt)]
@@ -17,9 +17,9 @@ class BasicNet(nn.Module):
         return x
 
 
-class FNet(nn.Module):
+class HFDNN(nn.Module):
     def __init__(self, layer_cnt):
-        super(FNet, self).__init__()
+        super(HFDNN, self).__init__()
 
         self.degree = 5
         self.Fh = nn.Linear(3, 2, bias=False)
@@ -41,9 +41,9 @@ class FNet(nn.Module):
         return x
 
 
-class RNNNet(nn.Module):
+class BasicRNN(nn.Module):
     def __init__(self, layer_cnt):
-        super(RNNNet, self).__init__()
+        super(BasicRNN, self).__init__()
 
         self.num_layers = layer_cnt
         self.rnn = nn.GRU(3, 3, self.num_layers, batch_first=True)

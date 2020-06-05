@@ -10,18 +10,18 @@ import models
 
 def main():
     parser = argparse.ArgumentParser(description='PyTorch MNIST Example')
-    parser.add_argument('--model', type=str, default='BasicNet', choices=['BasicNet', 'FNet', 'RNNNet', 'SigDNN'])
+    parser.add_argument('--model', type=str, default='BasicDNN', choices=['BasicDNN', 'HFDNN', 'BasicRNN', 'SigDNN'])
     parser.add_argument('--file-name', type=str, default='checkpoints/test/checkpoint_final.pth')
     parser.add_argument('--result-dir', type=str, default='results/test')
     parser.add_argument('--layer-cnt', type=int, default=2)
     args = parser.parse_args()
 
-    time_series = (args.model == 'RNNNet' or args.model == 'SigDNN')
+    time_series = (args.model == 'BasicRNN' or args.model == 'SigDNN')
     torch.manual_seed(1)
-    model = {'BasicNet': models.BasicNet(args.layer_cnt),
-             'FNet': models.FNet(args.layer_cnt),
-             'RNNNet': models.RNNNet(args.layer_cnt),
-             'SigDNN': models.SigDNN(args.layer_cnt)}.get(args.model, 'BasicNet')
+    model = {'BasicDNN': models.BasicDNN(args.layer_cnt),
+             'HFDNN': models.HFDNN(args.layer_cnt),
+             'BasicRNN': models.BasicRNN(args.layer_cnt),
+             'SigDNN': models.SigDNN(args.layer_cnt)}.get(args.model, 'BasicDNN')
     model = model.double()
     loaded_state_dict = torch.load(args.file_name, map_location='cpu')
     try:
@@ -46,9 +46,8 @@ def main():
 
         x_data, y_data = torch.from_numpy(x_data), torch.from_numpy(y_data)
         y_pred = model(x_data)
-        if args.model == 'RNNNet':
+        if args.model == 'BasicRNN':
             y_pred = y_pred[0]
-        # print(x_data.shape, y_data.shape, y_pred.shape)
 
         loss1 = torch.nn.functional.l1_loss(y_data, y_pred)
         loss2 = torch.nn.functional.mse_loss(y_data, y_pred)
