@@ -4,33 +4,29 @@ from torch.nn import functional as f
 
 
 class BasicNet(nn.Module):
-    def __init__(self):
+    def __init__(self, layer_cnt):
         super(BasicNet, self).__init__()
 
-        self.fc1 = nn.Linear(3, 3)
-        self.fc2 = nn.Linear(3, 3)
-        self.result_layer = nn.Linear(3, 1)
+        self.decoder = nn.Linear(3, 1)
+        layers = [nn.Sequential(nn.Linear(3, 3), nn.ReLU()) for _ in range(layer_cnt)]
+        self.fc_layers = nn.Sequential(*layers)
 
     def forward(self, x):
-        x = f.leaky_relu(self.fc1(x))
-        x = f.leaky_relu(self.fc2(x))
-        x = f.leaky_relu(self.result_layer(x))
+        x = self.fc_layers(x)
+        x = f.leaky_relu(self.decoder(x))
         return x
-
-    def __str__(self):
-        return 'BasicNet'
 
 
 class FNet(nn.Module):
-    def __init__(self):
+    def __init__(self, layer_cnt):
         super(FNet, self).__init__()
 
         self.degree = 5
         self.Fh = nn.Linear(3, 2, bias=False)
 
-        self.fc1 = nn.Linear(self.degree + 1, self.degree + 1)
-        self.fc2 = nn.Linear(self.degree + 1, self.degree + 1)
-        self.result_layer = nn.Linear(self.degree + 1, 1)
+        layers = [nn.Sequential(nn.Linear(self.degree + 1, self.degree + 1), nn.ReLU()) for _ in range(layer_cnt)]
+        self.fc_layers = nn.Sequential(*layers)
+        self.decoder = nn.Linear(self.degree + 1, 1)
 
     def forward(self, x):
         x = self.Fh(x)
@@ -39,21 +35,17 @@ class FNet(nn.Module):
         x = x.unsqueeze(1)
         x = torch.cat([x ** i for i in range(0, self.degree + 1)], 1)
 
-        x = f.leaky_relu(self.fc1(x))
-        x = f.leaky_relu(self.fc2(x))
-        x = f.leaky_relu(self.result_layer(x))
+        x = self.fc_layers(x)
+        x = f.leaky_relu(self.decoder(x))
 
         return x
 
-    def __str__(self):
-        return 'FNet'
-
 
 class RNNNet(nn.Module):
-    def __init__(self):
+    def __init__(self, layer_cnt):
         super(RNNNet, self).__init__()
 
-        self.num_layers = 5
+        self.num_layers = layer_cnt
         self.rnn = nn.GRU(3, 3, self.num_layers, batch_first=True)
         self.fc = nn.Linear(3, 1)
 
@@ -65,3 +57,18 @@ class RNNNet(nn.Module):
 
     def init_hidden(self, batch_size):
         return torch.zeros(self.num_layers, batch_size, 3)
+
+
+class SigDNN(nn.Module):
+    def __init__(self, layer_cnt):
+        super(SigDNN, self).__init__()
+
+        self.decoder = nn.Linear(30, 1)
+        layers = [nn.Sequential(nn.Linear(30, 30), nn.LeakyReLU()) for _ in range(layer_cnt)]
+        self.fc_layers = nn.Sequential(*layers)
+
+    def forward(self, x):
+        x = torch.flatten(x, 2)
+        x = self.fc_layers(x)
+        x = f.leaky_relu(self.decoder(x))
+        return x

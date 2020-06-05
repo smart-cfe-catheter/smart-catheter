@@ -62,16 +62,16 @@ class CatheterDataset(Dataset):
             if self.window is None:
                 return self.x[:, idx], self.y[:, idx]
             else:
-                return self.x[:, idx:idx + self.window], self.y[:, self.window - 1]
+                return self.x[:, idx:idx + self.window], self.y[:, idx + self.window - 1]
         return self.x[idx], self.y[idx]
 
 
-def load_dataset(no_validation=False, time_series=False):
-    test_set = CatheterDataset(['test'], time_series)
+def load_dataset(no_validation=False, time_series=False, window=None):
+    test_set = CatheterDataset(['test'], time_series, window)
     if no_validation:
-        train_set = CatheterDataset(['train', 'validation'], time_series)
+        train_set = CatheterDataset(['train', 'validation'], time_series, window)
         return train_set, test_set
     else:
-        train_set = CatheterDataset(['train'], time_series)
-        validation_set = CatheterDataset(['validation'], time_series)
+        train_set = CatheterDataset(['train'], time_series, window)
+        validation_set = CatheterDataset(['validation'], time_series, window)
         return train_set, validation_set, test_set

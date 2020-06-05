@@ -3,16 +3,19 @@ from torch.nn import functional as f
 
 
 def repackage_hidden(h):
-    if isinstance(h, torch.Tensor):
+    if h is None:
+        return h
+    elif isinstance(h, torch.Tensor):
         return h.detach()
     else:
         return tuple(repackage_hidden(v) for v in h)
 
 
 class Trainer:
-    def __init__(self, model, time_series, optimizer, device):
+    def __init__(self, model, time_series, rnn, optimizer, device):
         self.model = model
         self.time_series = time_series
+        self.rnn = rnn
         self.optimizer = optimizer
         self.device = device
 
@@ -20,7 +23,7 @@ class Trainer:
         x, y = x.to(self.device), y.to(self.device)
         self.optimizer.zero_grad()
 
-        if self.time_series:
+        if self.rnn:
             h = repackage_hidden(h)
             output, h = self.model(x, h)
         else:
@@ -36,8 +39,6 @@ class Trainer:
         for batch, (x, y) in enumerate(loader):
             if self.time_series:
                 x, y = torch.transpose(x, 0, 1), torch.transpose(y, 0, 1)
-                if batch == 0:
-                    h = self.model.init_hidden(x.shape[0]).to(self.device).double()
             loss, h = self.train_epoch(x, y, h=h)
             total_loss += loss.item() * len(x)
             loss.backward()
@@ -57,8 +58,6 @@ class Trainer:
             for batch, (x, y) in enumerate(loader):
                 if self.time_series:
                     x, y = torch.transpose(x, 0, 1), torch.transpose(y, 0, 1)
-                    if batch == 0:
-                        h = self.model.init_hidden(x.shape[0]).to(self.device).double()
                 loss, h = self.train_epoch(x, y, h=h, reduction='sum')
                 total_loss += loss.item()
 

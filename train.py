@@ -74,32 +74,32 @@ def main():
     parser.add_argument('--log-interval', type=int, default=10)
     parser.add_argument('--save-model', action='store_true', default=False)
     parser.add_argument('--visualize', action='store_true', default=False)
-    parser.add_argument('--model', type=str, default='BasicNet', choices=['BasicNet', 'FNet', 'RNNNet'])
+    parser.add_argument('--model', type=str, default='BasicNet', choices=['BasicNet', 'FNet', 'RNNNet', 'SigDNN'])
     parser.add_argument('--device-ids', type=int, nargs='+', default=None)
     parser.add_argument('--checkpoint-dir', type=str, default='./checkpoints/test')
+    parser.add_argument('--layer-cnt', type=int, default=2)
     parser.add_argument('--save-per-epoch', type=int, default=5)
     parser.add_argument('--noise-cancel', action='store_true', default=False)
     parser.add_argument('--reset', action='store_true', default=False)
     args = parser.parse_args()
 
-    time_series = (args.model == 'RNNNet')
+    rnn = (args.model == 'RNNNet')
+    time_series = (args.model == 'RNNNet' or args.model == 'SigDNN')
+    window = 10 if args.model == 'SigDNN' else None
     use_cuda = not args.no_cuda and torch.cuda.is_available()
     torch.manual_seed(1)
     device = torch.device('cuda' if use_cuda else 'cpu')
     print(f'device selected: {device}\n')
 
-    train_data, validation_data, test_data = load_dataset(time_series=time_series)
+    train_data, validation_data, test_data = load_dataset(time_series=time_series, window=window)
     train_loader = DataLoader(dataset=train_data, batch_size=args.batch_size, shuffle=not time_series)
     validation_loader = DataLoader(dataset=validation_data, batch_size=args.batch_size)
     test_loader = DataLoader(dataset=test_data, batch_size=args.batch_size)
 
-    model = None
-    if args.model == 'BasicNet':
-        model = models.BasicNet()
-    elif args.model == 'FNet':
-        model = models.FNet()
-    elif args.model == 'RNNNet':
-        model = models.RNNNet()
+    model = {'BasicNet': models.BasicNet(args.layer_cnt),
+             'FNet': models.FNet(args.layer_cnt),
+             'RNNNet': models.RNNNet(args.layer_cnt),
+             'SigDNN': models.SigDNN(args.layer_cnt)}.get(args.model, 'BasicNet')
     if args.device_ids and use_cuda and len(args.device_ids) > 1:
         model = nn.DataParallel(model, device_ids=[i for i in range(len(args.device_ids))])
     model = model.to(device).double().apply(weight_init)
@@ -108,7 +108,7 @@ def main():
     scheduler = optim.lr_scheduler.ReduceLROnPlateau(optimizer=optimizer)
     last_epoch = load_checkpoint(args, model, optimizer, scheduler) if not args.reset else 0
 
-    trainer = Trainer(model, time_series=time_series, optimizer=optimizer, device=device)
+    trainer = Trainer(model, time_series=time_series, rnn=rnn, optimizer=optimizer, device=device)
 
     train_losses = []
     validation_losses = []
@@ -123,8 +123,8 @@ def main():
 
         if args.save_model and e % args.save_per_epoch == 0:
             save_checkpoint(e, args, e, model, optimizer, scheduler)
-        print(f'Train Loss: {train_loss}N / Validation Loss: {validation_loss}N\n')
-    print(f'\nTest Loss: {trainer.test(test_loader)}N')
+        print(f'Train Loss: {train_loss} / Validation Loss: {validation_loss}\n')
+    print(f'\nTest Loss: {trainer.test(test_loader)}')
 
     plt.plot(range(last_epoch + 1, args.epochs + 1), train_losses, label='train loss')
     plt.plot(range(last_epoch + 1, args.epochs + 1), validation_losses, label='validation loss')
