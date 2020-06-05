@@ -34,31 +34,39 @@ class Trainer:
     def train(self, loader, log_interval=100):
         self.model.train()
         total_loss = 0.0
+        total_num = 0
 
         h = None
         for batch, (x, y) in enumerate(loader):
             if self.time_series:
                 x, y = torch.transpose(x, 0, 1), torch.transpose(y, 0, 1)
+                if not self.rnn:
+                    x, y = torch.reshape(x, (-1, 30)), torch.reshape(y, (-1, 1))
             loss, h = self.train_epoch(x, y, h=h)
-            total_loss += loss.item() * len(x)
+            total_loss += loss.item() * y.numel()
             loss.backward()
+            total_num += y.numel()
 
             self.optimizer.step()
             if batch % log_interval == 0:
                 print(f'Batch {batch}/{len(loader)}\t Loss: {loss.item()}')
 
-        return total_loss / len(loader.dataset)
+        return total_loss / total_num
 
     def test(self, loader):
         self.model.eval()
         total_loss = 0.0
+        total_num = 0
 
         h = None
         with torch.no_grad():
             for batch, (x, y) in enumerate(loader):
                 if self.time_series:
                     x, y = torch.transpose(x, 0, 1), torch.transpose(y, 0, 1)
+                    if not self.rnn:
+                        x, y = torch.reshape(x, (-1, 30)), torch.reshape(y, (-1, 1))
                 loss, h = self.train_epoch(x, y, h=h, reduction='sum')
                 total_loss += loss.item()
-
-        return total_loss / len(loader.dataset)
+                total_num += y.numel()
+        
+        return total_loss / total_num

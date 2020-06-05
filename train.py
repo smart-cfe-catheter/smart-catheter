@@ -6,6 +6,7 @@ import torch
 from torch import optim, nn
 from torch.nn import init
 from torch.utils.data import DataLoader
+from pathlib import Path
 
 import models
 from dataset import load_dataset
@@ -69,22 +70,23 @@ def main():
     parser = argparse.ArgumentParser(description='Smart Catheter Trainer')
     parser.add_argument('--batch-size', type=int, default=256)
     parser.add_argument('--epochs', type=int, default=50)
-    parser.add_argument('--lr', type=float, default=0.1)
+    parser.add_argument('--lr', type=float, default=0.01)
     parser.add_argument('--no-cuda', action='store_true', default=False)
     parser.add_argument('--log-interval', type=int, default=10)
     parser.add_argument('--save-model', action='store_true', default=False)
     parser.add_argument('--visualize', action='store_true', default=False)
-    parser.add_argument('--model', type=str, default='BasicDNN', choices=['BasicDNN', 'HFDNN', 'BasicRNN', 'SigDNN'])
+    parser.add_argument('--model', type=str, default='DNN', choices=['DNN', 'HFDNN', 'RNN', 'SigDNN'])
     parser.add_argument('--device-ids', type=int, nargs='+', default=None)
     parser.add_argument('--checkpoint-dir', type=str, default='./checkpoints/test')
     parser.add_argument('--layer-cnt', type=int, default=2)
-    parser.add_argument('--save-per-epoch', type=int, default=5)
+    parser.add_argument('--save-per-epoch', type=int, default=50)
     parser.add_argument('--noise-cancel', action='store_true', default=False)
     parser.add_argument('--reset', action='store_true', default=False)
     args = parser.parse_args()
 
-    rnn = (args.model == 'BasicRNN')
-    time_series = (args.model == 'BasicRNN' or args.model == 'SigDNN')
+    Path(args.checkpoint_dir).mkdir(parents=True, exist_ok=True)
+    rnn = (args.model == 'RNN')
+    time_series = (args.model == 'RNN' or args.model == 'SigDNN')
     window = 10 if args.model == 'SigDNN' else None
     use_cuda = not args.no_cuda and torch.cuda.is_available()
     torch.manual_seed(1)
@@ -96,10 +98,10 @@ def main():
     validation_loader = DataLoader(dataset=validation_data, batch_size=args.batch_size)
     test_loader = DataLoader(dataset=test_data, batch_size=args.batch_size)
 
-    model = {'BasicDNN': models.BasicDNN(args.layer_cnt),
+    model = {'DNN': models.DNN(args.layer_cnt),
              'HFDNN': models.HFDNN(args.layer_cnt),
-             'BasicRNN': models.BasicRNN(args.layer_cnt),
-             'SigDNN': models.SigDNN(args.layer_cnt)}.get(args.model, 'BasicDNN')
+             'RNN': models.RNN(args.layer_cnt),
+             'SigDNN': models.SigDNN(args.layer_cnt)}.get(args.model, 'DNN')
     if args.device_ids and use_cuda and len(args.device_ids) > 1:
         model = nn.DataParallel(model, device_ids=[i for i in range(len(args.device_ids))])
     model = model.to(device).double().apply(weight_init)
@@ -129,7 +131,7 @@ def main():
     plt.plot(range(last_epoch + 1, args.epochs + 1), train_losses, label='train loss')
     plt.plot(range(last_epoch + 1, args.epochs + 1), validation_losses, label='validation loss')
     plt.xlabel('Epoch')
-    plt.ylabel('Loss [N]')
+    plt.ylabel('MSE Loss')
     plt.legend(loc=2)
 
     if args.save_model:

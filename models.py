@@ -3,13 +3,17 @@ from torch import nn
 from torch.nn import functional as f
 
 
-class BasicDNN(nn.Module):
-    def __init__(self, layer_cnt):
-        super(BasicDNN, self).__init__()
+def stack_linear_layers(dim, layer_cnt):
+    return [nn.Sequential(nn.Linear(dim, dim), nn.BatchNorm1d(dim), nn.LeakyReLU()) for _ in range(layer_cnt)]
 
-        self.decoder = nn.Linear(3, 1)
-        layers = [nn.Sequential(nn.Linear(3, 3), nn.ReLU()) for _ in range(layer_cnt)]
+
+class DNN(nn.Module):
+    def __init__(self, layer_cnt):
+        super(DNN, self).__init__()
+
+        layers = stack_linear_layers(3, layer_cnt)
         self.fc_layers = nn.Sequential(*layers)
+        self.decoder = nn.Linear(3, 1)
 
     def forward(self, x):
         x = self.fc_layers(x)
@@ -24,7 +28,7 @@ class HFDNN(nn.Module):
         self.degree = 5
         self.Fh = nn.Linear(3, 2, bias=False)
 
-        layers = [nn.Sequential(nn.Linear(self.degree + 1, self.degree + 1), nn.ReLU()) for _ in range(layer_cnt)]
+        layers = stack_linear_layers(self.degree + 1, layer_cnt)
         self.fc_layers = nn.Sequential(*layers)
         self.decoder = nn.Linear(self.degree + 1, 1)
 
@@ -41,17 +45,17 @@ class HFDNN(nn.Module):
         return x
 
 
-class BasicRNN(nn.Module):
+class RNN(nn.Module):
     def __init__(self, layer_cnt):
-        super(BasicRNN, self).__init__()
+        super(RNN, self).__init__()
 
         self.num_layers = layer_cnt
         self.rnn = nn.GRU(3, 3, self.num_layers, batch_first=True)
-        self.fc = nn.Linear(3, 1)
+        self.decoder = nn.Linear(3, 1)
 
     def forward(self, x, h=None):
         x, h = self.rnn(x, h)
-        x = self.fc(x)
+        x = self.decoder(x)
 
         return x, h
 
@@ -63,12 +67,11 @@ class SigDNN(nn.Module):
     def __init__(self, layer_cnt):
         super(SigDNN, self).__init__()
 
-        self.decoder = nn.Linear(30, 1)
-        layers = [nn.Sequential(nn.Linear(30, 30), nn.LeakyReLU()) for _ in range(layer_cnt)]
+        layers = stack_linear_layers(30, layer_cnt)
         self.fc_layers = nn.Sequential(*layers)
+        self.decoder = nn.Linear(30, 1)
 
     def forward(self, x):
-        x = torch.flatten(x, 2)
         x = self.fc_layers(x)
         x = f.leaky_relu(self.decoder(x))
         return x
