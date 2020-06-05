@@ -1,27 +1,10 @@
 import argparse
 
 import matplotlib.pyplot as plt
-import numpy as np
 import torch
-from scipy.constants import g
 
+import dataset
 import models
-
-means = [1539.7412018905536, 1539.6866708934765, 1539.4585310270897]
-stds = [0.08834883761864104, 0.118099138737808, 0.09286198197001226]
-
-
-def import_data(num, time_series=False):
-    record = np.loadtxt(f'data/preprocess/test/{num}.csv', delimiter=',', usecols=(0, 1, 2, 3))
-    x_data, y_data = torch.from_numpy(record[:, [1, 2, 3]]), torch.from_numpy(record[:, [0]] * g * 1e-3)
-    for i in range(3):
-        x_data[:, i] -= means[i]
-        x_data[:, i] /= stds[i]
-    if time_series:
-        x_data, y_data = x_data.reshape(-1, 1, 3), y_data.reshape(-1, 1, 1)
-        x_data, y_data = np.transpose(x_data, [1, 0, 2]), np.transpose(y_data, [1, 0, 2])
-
-    return x_data, y_data
 
 
 def main():
@@ -49,12 +32,14 @@ def main():
     model.eval()
 
     for i in range(1, 8):
-        x_data, y_data = import_data(i, time_series)
-        h = torch.zeros(5, x_data.shape[1], 3).double()
+        x_data, y_data = dataset.import_data(f'data/preprocess/test/{i}.csv')
         if time_series:
-            y_pred, _ = model(x_data, h)
-        else:
-            y_pred = model(x_data)
+            x_data, y_data = x_data.reshape(1, -1, 3), y_data.reshape(1, -1, 1)
+
+        x_data, y_data = torch.from_numpy(x_data), torch.from_numpy(y_data)
+        y_pred = model(x_data)
+        if time_series:
+            y_pred = y_pred[0]
 
         loss1 = torch.nn.functional.l1_loss(y_data, y_pred)
         loss2 = torch.nn.functional.mse_loss(y_data, y_pred)

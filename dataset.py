@@ -2,18 +2,24 @@ from os import listdir
 from os.path import isfile, join
 
 import numpy as np
-from scipy.constants import g
+import torch
 from torch.utils.data import Dataset
 
-means = [1539.7412018905536, 1539.6866708934765, 1539.4585310270897]
-stds = [0.08834883761864104, 0.118099138737808, 0.09286198197001226]
+import transforms
+
+
+def import_data(file_name):
+    record = np.loadtxt(file_name, delimiter=',', usecols=(0, 1, 2, 3))
+    x_data, y_data = record[:, [1, 2, 3]], record[:, [0]]
+    x_data = transforms.normalize(x_data)
+
+    return x_data, y_data
 
 
 class CatheterDataset(Dataset):
-    def __init__(self, folders, time_series=False, transform=None, target_transform=None):
-        self.transform = transform
-        self.target_transform = target_transform
-
+    def __init__(self, folders, time_series=False, window=None):
+        self.window = window
+        self.time_series = time_series
         x = np.empty((0, 3)) if not time_series else []
         y = np.empty((0, 1)) if not time_series else []
         files = []
@@ -25,12 +31,7 @@ class CatheterDataset(Dataset):
             files += folder
 
         for file in files:
-            record = np.loadtxt(file, delimiter=',', usecols=(0, 1, 2, 3))
-            x_data, y_data = record[:, [1, 2, 3]], record[:, [0]]
-
-            for i in range(3):
-                x_data[:, i] -= means[i]
-                x_data[:, i] /= stds[i]
+            x_data, y_data = import_data(file)
 
             if time_series:
                 x.append(x_data)
@@ -46,32 +47,31 @@ class CatheterDataset(Dataset):
                 x[i] = np.pad(x[i], [(0, max_len - length), (0, 0)], mode='constant')
                 y[i] = np.pad(y[i], [(0, max_len - length), (0, 0)], mode='constant')
             x, y = np.stack(x, axis=0), np.stack(y, axis=0)
-            x, y = np.transpose(x, [1, 0, 2]), np.transpose(y, [1, 0, 2])
 
-        self.x = np.float64(x)
-        self.y = y * g * 1e-3
-        self.len = self.x.shape[0]
+        self.x = torch.from_numpy(np.float64(x))
+        self.y = torch.from_numpy(y)
+        self.len = self.x.shape[1] if time_series else self.x.shape[0]
+        if window is not None:
+            self.len = self.len - window + 1
 
     def __len__(self):
         return self.len
 
     def __getitem__(self, idx):
-        x, y = self.x[idx], self.y[idx]
-
-        if self.transform:
-            x = self.transform(x)
-        if self.target_transform:
-            y = self.target_transform(y)
-
-        return x, y
+        if self.time_series:
+            if self.window is None:
+                return self.x[:, idx], self.y[:, idx]
+            else:
+                return self.x[:, idx:idx + self.window], self.y[:, self.window - 1]
+        return self.x[idx], self.y[idx]
 
 
-def load_dataset(no_validation=False, time_series=False, transform=None, target_transform=None):
-    test_set = CatheterDataset(['test'], time_series, transform, target_transform)
+def load_dataset(no_validation=False, time_series=False):
+    test_set = CatheterDataset(['test'], time_series)
     if no_validation:
-        train_set = CatheterDataset(['train', 'validation'], time_series, transform, target_transform)
+        train_set = CatheterDataset(['train', 'validation'], time_series)
         return train_set, test_set
     else:
-        train_set = CatheterDataset(['train'], time_series, transform, target_transform)
-        validation_set = CatheterDataset(['validation'], time_series, transform, target_transform)
+        train_set = CatheterDataset(['train'], time_series)
+        validation_set = CatheterDataset(['validation'], time_series)
         return train_set, validation_set, test_set

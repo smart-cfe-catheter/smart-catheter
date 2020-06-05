@@ -53,11 +53,15 @@ class RNNNet(nn.Module):
     def __init__(self):
         super(RNNNet, self).__init__()
 
-        self.rnn = nn.GRU(3, 3, 5)
+        self.num_layers = 5
+        self.rnn = nn.GRU(3, 3, self.num_layers, batch_first=True)
         self.fc = nn.Linear(3, 1)
 
-    def forward(self, x, h):
+    def forward(self, x, h=None):
         x, h = self.rnn(x, h)
         x = self.fc(x)
 
         return x, h
+
+    def init_hidden(self, batch_size):
+        return torch.zeros(self.num_layers, batch_size, 3)

@@ -6,10 +6,8 @@ import torch
 from torch import optim, nn
 from torch.nn import init
 from torch.utils.data import DataLoader
-from torchvision import transforms
 
 import models
-import transforms as tf
 from dataset import load_dataset
 from trainer import Trainer
 
@@ -90,10 +88,7 @@ def main():
     device = torch.device('cuda' if use_cuda else 'cpu')
     print(f'device selected: {device}\n')
 
-    tfs = [tf.ToTensor()]
-    if args.noise_cancel:
-        tfs.append(tf.NoiseCancel())
-    train_data, validation_data, test_data = load_dataset(time_series=time_series, transform=transforms.Compose(tfs))
+    train_data, validation_data, test_data = load_dataset(time_series=time_series)
     train_loader = DataLoader(dataset=train_data, batch_size=args.batch_size, shuffle=not time_series)
     validation_loader = DataLoader(dataset=validation_data, batch_size=args.batch_size)
     test_loader = DataLoader(dataset=test_data, batch_size=args.batch_size)
