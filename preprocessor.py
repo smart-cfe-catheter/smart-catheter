@@ -25,6 +25,9 @@ for i in range(record_count):
                          parse_dates=['timestamp'], dtype={'weight': float})
 
     x_data, y_data = x_data.dropna().reset_index(drop=True), y_data.dropna().reset_index(drop=True)
+    x_data['sensor1'] -= x_data.at[0, 'sensor1']
+    x_data['sensor2'] -= x_data.at[0, 'sensor2']
+    x_data['sensor3'] -= x_data.at[0, 'sensor3']
 
     raw_data = pd.merge_asof(y_data, x_data, on='timestamp', direction='nearest', tolerance=pd.Timedelta('5ms'))
     raw_data = raw_data.dropna().reset_index(drop=True)

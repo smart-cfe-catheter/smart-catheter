@@ -21,7 +21,7 @@ def main():
     dataset = CatheterDataset(folders=['train', 'validation', 'test'])
 
     for i in range(3):
-        data = dataset[:][0][:, i]
+        data = dataset[:][0][:, i].data
         print(f'<Sensor {i + 1}>')
         print(f'- Mean: {np.mean(data)}')
         print(f'- Std: {np.std(data)}')

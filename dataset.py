@@ -11,7 +11,7 @@ import transforms
 def import_data(file_name):
     record = np.loadtxt(file_name, delimiter=',', usecols=(0, 1, 2, 3))
     x_data, y_data = record[:, [1, 2, 3]], record[:, [0]]
-    x_data = transforms.normalize(x_data)
+    # x_data = transforms.normalize(x_data)
 
     return x_data, y_data
 

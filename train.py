@@ -131,7 +131,7 @@ def main():
     plt.plot(range(last_epoch + 1, args.epochs + 1), train_losses, label='train loss')
     plt.plot(range(last_epoch + 1, args.epochs + 1), validation_losses, label='validation loss')
     plt.xlabel('Epoch')
-    plt.ylabel('MSE Loss')
+    plt.ylabel('Loss')
     plt.legend(loc=2)
 
     if args.save_model:

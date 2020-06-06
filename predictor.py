@@ -52,9 +52,8 @@ def main():
         if args.model == 'RNN':
             y_pred = y_pred[0]
 
-        loss1 = torch.nn.functional.l1_loss(y_data, y_pred)
-        loss2 = torch.nn.functional.mse_loss(y_data, y_pred)
-        print(f'Prediction {i} L1 loss : {loss1.data.numpy()} / L2 loss : {loss2.data.numpy()}')
+        loss = torch.nn.functional.l1_loss(y_data, y_pred)
+        print(f'Prediction {i} L1 loss : {loss.data.numpy()}')
 
         y_data, y_pred = y_data.view(-1), y_pred.view(-1)
         x_coors = range(0, y_data.shape[0])

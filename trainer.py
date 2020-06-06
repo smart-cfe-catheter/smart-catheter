@@ -28,7 +28,7 @@ class Trainer:
             output, h = self.model(x, h)
         else:
             output = self.model(x)
-        loss = f.mse_loss(output, y, reduction=reduction)
+        loss = f.smooth_l1_loss(output, y, reduction=reduction)
         return loss, h
 
     def train(self, loader, log_interval=100):
