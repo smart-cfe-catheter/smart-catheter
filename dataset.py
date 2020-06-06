@@ -11,7 +11,7 @@ import transforms
 def import_data(file_name):
     record = np.loadtxt(file_name, delimiter=',', usecols=(0, 1, 2, 3))
     x_data, y_data = record[:, [1, 2, 3]], record[:, [0]]
-    # x_data = transforms.normalize(x_data)
+    x_data = transforms.noise_cancel(x_data)
 
     return x_data, y_data
 
@@ -27,7 +27,7 @@ class CatheterDataset(Dataset):
 
         for dir_name in folders:
             file_dir = f'data/preprocess/{dir_name}'
-            folder = [f'{file_dir}/{f}' for f in listdir(file_dir) if isfile(join(file_dir, f))]
+            folder = [f'{file_dir}/{f}' for f in listdir(file_dir) if isfile(join(file_dir, f)) and '.csv' in f]
             files += folder
 
         for file in files:

@@ -1,9 +1,9 @@
 import argparse
+from pathlib import Path
 
 import matplotlib.pyplot as plt
 import numpy as np
 import torch
-from pathlib import Path
 
 import dataset
 import models
@@ -32,7 +32,7 @@ def main():
         model.module.load_state_dict(loaded_state_dict['model_state_dict'])
     model.eval()
 
-    for i in range(1, 8):
+    for i in range(1, 6):
         x_data, y_data = dataset.import_data(f'data/preprocess/test/{i}.csv')
         if time_series:
             x_data, y_data = x_data.reshape(1, -1, 3), y_data.reshape(1, -1, 1)

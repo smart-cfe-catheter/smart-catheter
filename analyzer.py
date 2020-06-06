@@ -19,29 +19,30 @@ def box_plot(data, title):
 def main():
     torch.manual_seed(1)
     dataset = CatheterDataset(folders=['train', 'validation', 'test'])
+    x_data, y_data = dataset[:][0].numpy(), dataset[:][1].numpy()
 
     for i in range(3):
-        data = dataset[:][0][:, i].data
+        x = x_data[:, i]
         print(f'<Sensor {i + 1}>')
-        print(f'- Mean: {np.mean(data)}')
-        print(f'- Std: {np.std(data)}')
-        print(f'- Median: {np.median(data)}')
+        print(f'- Mean: {np.mean(x)}')
+        print(f'- Std: {np.std(x)}')
+        print(f'- Median: {np.median(x)}')
 
     plt.figure(1)
     for i in range(3):
         plt.subplot(3, 1, i + 1)
-        histogram_plot(dataset[:][0][:, i], f'Sensor{i + 1}', '\u0394\u03BB')
+        histogram_plot(x_data[:, i], f'Sensor{i + 1}', '\u0394\u03BB')
 
     plt.figure(2)
     for i in range(3):
         plt.subplot(3, 1, i + 1)
-        box_plot(dataset[:][0][:, i], f'Sensor{i + 1}')
+        box_plot(x_data[:, i], f'Sensor{i + 1}')
 
     plt.figure(3)
     plt.subplot(2, 1, 1)
-    histogram_plot(dataset[:][1], 'Force', 'N')
+    histogram_plot(y_data, 'Weight', 'g')
     plt.subplot(2, 1, 2)
-    box_plot(dataset[:][1], 'Force')
+    box_plot(y_data, 'Weight')
 
     plt.show()
 

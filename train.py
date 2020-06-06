@@ -1,12 +1,12 @@
 import argparse
 import os
+from pathlib import Path
 
 import matplotlib.pyplot as plt
 import torch
 from torch import optim, nn
 from torch.nn import init
 from torch.utils.data import DataLoader
-from pathlib import Path
 
 import models
 from dataset import load_dataset
@@ -107,7 +107,7 @@ def main():
     model = model.to(device).double().apply(weight_init)
 
     optimizer = optim.Adam(model.parameters(), lr=args.lr)
-    scheduler = optim.lr_scheduler.ReduceLROnPlateau(optimizer=optimizer)
+    scheduler = optim.lr_scheduler.ReduceLROnPlateau(optimizer=optimizer, patience=20)
     last_epoch = load_checkpoint(args, model, optimizer, scheduler) if not args.reset else 0
 
     trainer = Trainer(model, time_series=time_series, rnn=rnn, optimizer=optimizer, device=device)

@@ -12,22 +12,23 @@ def save_data(records, folder):
 
 
 random.seed(1)
-record_count = 89
-ban_list = [2, 3, 5, 6, 9, 27, 28, 29, 30, 31, 32, 33, 34, 35, 36, 47, 57, 65, 66, 73, 74, 78, 82, 83, 84, 86]
+record_count = 54
+ban_list = [11, 18, 19, 28, 32, 36, 37, 38, 40, 45, 48]
 data_list = []
+refs = [1539.7249357906976, 1539.7461374651164, 1539.5011418372094]
 
-for i in range(record_count):
+for i in range(1, record_count + 1):
     if i in ban_list:
         continue
-    x_data = pd.read_csv(f'data/raw/input/{i + 1}.csv', index_col=0, header=None,
+    x_data = pd.read_csv(f'data/raw/input/{i}.csv', index_col=0, header=None,
                          names=['timestamp', 'sensor1', 'sensor2', 'sensor3'], parse_dates=['timestamp'])
-    y_data = pd.read_csv(f'data/raw/output/{i + 1}.csv', index_col=0, header=None, names=['timestamp', 'weight'],
+    y_data = pd.read_csv(f'data/raw/output/{i}.csv', index_col=0, header=None, names=['timestamp', 'weight'],
                          parse_dates=['timestamp'], dtype={'weight': float})
 
     x_data, y_data = x_data.dropna().reset_index(drop=True), y_data.dropna().reset_index(drop=True)
-    x_data['sensor1'] -= x_data.at[0, 'sensor1']
-    x_data['sensor2'] -= x_data.at[0, 'sensor2']
-    x_data['sensor3'] -= x_data.at[0, 'sensor3']
+    x_data = x_data[x_data['sensor3'] > 1538]
+    for idx in range(3):
+        x_data[f'sensor{idx + 1}'] -= refs[idx]
 
     raw_data = pd.merge_asof(y_data, x_data, on='timestamp', direction='nearest', tolerance=pd.Timedelta('5ms'))
     raw_data = raw_data.dropna().reset_index(drop=True)
