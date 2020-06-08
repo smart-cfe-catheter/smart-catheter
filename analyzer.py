@@ -2,7 +2,7 @@ import matplotlib.pyplot as plt
 import numpy as np
 import torch
 
-from dataset import CatheterDataset
+from data import CatheterDataset
 
 
 def histogram_plot(data, title, label):
@@ -19,7 +19,7 @@ def box_plot(data, title):
 def main():
     torch.manual_seed(1)
     dataset = CatheterDataset(folders=['train', 'validation', 'test'])
-    x_data, y_data = dataset[:][0].numpy(), dataset[:][1].numpy()
+    x_data, y_data = dataset[:][0], dataset[:][1]
 
     for i in range(3):
         x = x_data[:, i]

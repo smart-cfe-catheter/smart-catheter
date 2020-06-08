@@ -9,7 +9,7 @@ from torch.nn import init
 from torch.utils.data import DataLoader
 
 import models
-from dataset import load_dataset
+from data import CatheterDataset
 from trainer import Trainer
 
 
@@ -72,36 +72,37 @@ def main():
     parser.add_argument('--epochs', type=int, default=50)
     parser.add_argument('--lr', type=float, default=0.01)
     parser.add_argument('--no-cuda', action='store_true', default=False)
-    parser.add_argument('--log-interval', type=int, default=10)
+    parser.add_argument('--log-interval', type=int, default=100)
     parser.add_argument('--save-model', action='store_true', default=False)
     parser.add_argument('--visualize', action='store_true', default=False)
-    parser.add_argument('--model', type=str, default='DNN', choices=['DNN', 'HFDNN', 'RNN', 'SigDNN'])
+    parser.add_argument('--model', type=str, default='DNN', choices=['DNN', 'SigDNN'])
     parser.add_argument('--device-ids', type=int, nargs='+', default=None)
     parser.add_argument('--checkpoint-dir', type=str, default='./checkpoints/test')
     parser.add_argument('--layer-cnt', type=int, default=2)
     parser.add_argument('--save-per-epoch', type=int, default=50)
-    parser.add_argument('--noise-cancel', action='store_true', default=False)
     parser.add_argument('--reset', action='store_true', default=False)
     args = parser.parse_args()
 
-    Path(args.checkpoint_dir).mkdir(parents=True, exist_ok=True)
-    rnn = (args.model == 'RNN')
-    time_series = (args.model == 'RNN' or args.model == 'SigDNN')
-    window = 10 if args.model == 'SigDNN' else None
-    use_cuda = not args.no_cuda and torch.cuda.is_available()
     torch.manual_seed(1)
-    device = torch.device('cuda' if use_cuda else 'cpu')
-    print(f'device selected: {device}\n')
+    Path(args.checkpoint_dir).mkdir(parents=True, exist_ok=True)
+    model = {
+        'DNN': models.DNN(args.layer_cnt),
+        'RNN': models.RNN(args.layer_cnt),
+        'CNN': models.CNN(args.layer_cnt)
+    }.get(args.model, 'DNN')
 
-    train_data, validation_data, test_data = load_dataset(time_series=time_series, window=window)
-    train_loader = DataLoader(dataset=train_data, batch_size=args.batch_size, shuffle=not time_series)
+    use_cuda = not args.no_cuda and torch.cuda.is_available()
+    device = torch.device('cuda' if use_cuda else 'cpu')
+    print(f'Device selected: {device}\n')
+
+    train_data = CatheterDataset(['train'], model.type)
+    validation_data = CatheterDataset(['validation'], model.type)
+    test_data = CatheterDataset(['test'], model.type)
+
+    train_loader = DataLoader(dataset=train_data, batch_size=args.batch_size)
     validation_loader = DataLoader(dataset=validation_data, batch_size=args.batch_size)
     test_loader = DataLoader(dataset=test_data, batch_size=args.batch_size)
 
-    model = {'DNN': models.DNN(args.layer_cnt),
-             'HFDNN': models.HFDNN(args.layer_cnt),
-             'RNN': models.RNN(args.layer_cnt),
-             'SigDNN': models.SigDNN(args.layer_cnt)}.get(args.model, 'DNN')
     if args.device_ids and use_cuda and len(args.device_ids) > 1:
         model = nn.DataParallel(model, device_ids=[i for i in range(len(args.device_ids))])
     model = model.to(device).double().apply(weight_init)
@@ -110,7 +111,7 @@ def main():
     scheduler = optim.lr_scheduler.ReduceLROnPlateau(optimizer=optimizer, patience=20)
     last_epoch = load_checkpoint(args, model, optimizer, scheduler) if not args.reset else 0
 
-    trainer = Trainer(model, time_series=time_series, rnn=rnn, optimizer=optimizer, device=device)
+    trainer = Trainer(model, optimizer=optimizer, device=device)
 
     train_losses = []
     validation_losses = []
