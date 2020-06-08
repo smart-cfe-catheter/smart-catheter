@@ -61,6 +61,10 @@ def main():
             else:
                 real, pred = y[idx*sz:(idx+1)*sz], y_pred[idx*sz:(idx+1)*sz]
             real, pred = real.view(-1), pred.view(-1)
+            if model.type == 'CNN':
+                for i in range(1, real.shape[0]):
+                    real[i] += real[i - 1]
+                    pred[i] += pred[i - 1]
             loss = l1_loss(real, pred)
             print(f'Record #{idx} L1 Loss : {loss}')
 
