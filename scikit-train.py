@@ -18,7 +18,7 @@ args = parser.parse_args()
 
 torch.manual_seed(1)
 
-train, test = CatheterDataset(['train', 'validation']), CatheterDataset(['test'])
+train, test = CatheterDataset(['train', 'validation'], type='DNN'), CatheterDataset(['test'], type='DNN')
 train_x, train_y = train[:][0], train[:][1].reshape(-1)
 test_x, test_y = test[:][0], test[:][1].reshape(-1)
 

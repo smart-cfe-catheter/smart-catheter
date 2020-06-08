@@ -8,7 +8,7 @@ from torch import optim, nn
 from torch.nn import init
 from torch.utils.data import DataLoader
 
-import models
+from models import DNN, RNN, CNN
 from data import CatheterDataset
 from trainer import Trainer
 
@@ -75,7 +75,7 @@ def main():
     parser.add_argument('--log-interval', type=int, default=100)
     parser.add_argument('--save-model', action='store_true', default=False)
     parser.add_argument('--visualize', action='store_true', default=False)
-    parser.add_argument('--model', type=str, default='DNN', choices=['DNN', 'SigDNN'])
+    parser.add_argument('--model', type=str, default='DNN', choices=['DNN', 'RNN', 'CNN'])
     parser.add_argument('--device-ids', type=int, nargs='+', default=None)
     parser.add_argument('--checkpoint-dir', type=str, default='./checkpoints/test')
     parser.add_argument('--layer-cnt', type=int, default=2)
@@ -85,11 +85,7 @@ def main():
 
     torch.manual_seed(1)
     Path(args.checkpoint_dir).mkdir(parents=True, exist_ok=True)
-    model = {
-        'DNN': models.DNN(args.layer_cnt),
-        'RNN': models.RNN(args.layer_cnt),
-        'CNN': models.CNN(args.layer_cnt)
-    }.get(args.model, 'DNN')
+    model = eval(args.model)(args.layer_cnt)
 
     use_cuda = not args.no_cuda and torch.cuda.is_available()
     device = torch.device('cuda' if use_cuda else 'cpu')
@@ -105,7 +101,7 @@ def main():
 
     if args.device_ids and use_cuda and len(args.device_ids) > 1:
         model = nn.DataParallel(model, device_ids=[i for i in range(len(args.device_ids))])
-    model = model.to(device).double().apply(weight_init)
+    model = model.to(device).apply(weight_init)
 
     optimizer = optim.Adam(model.parameters(), lr=args.lr)
     scheduler = optim.lr_scheduler.ReduceLROnPlateau(optimizer=optimizer, patience=20)

@@ -4,52 +4,44 @@ from os.path import isfile, join
 import numpy as np
 from torch.utils.data import Dataset
 
+from preprocess import frequency, ndata
 
-def import_data(file_name, root_dir):
-    x_data = np.loadtxt(f'{root_dir}/input/{file_name}', delimiter=',')
-    y_data = np.loadtxt(f'{root_dir}/output/{file_name}', delimiter=',')
 
+def import_data(prefix, split, type):
+    fx = open(f'{prefix}/{split}_signal.in', 'rb')
+    fy = open(f'{prefix}/{split}_scale.in', 'rb')
+
+    x_buffer, y_buffer = bytearray(fx.read()), bytearray(fy.read())
+    x_data, y_data = np.frombuffer(x_buffer, np.float32), np.frombuffer(y_buffer, np.float32)
+    if type == 'DNN':
+        x_data, y_data = x_data.reshape((-1, 3)), y_data.reshape((-1, 1))
+    elif type == 'RNN':
+        x_data, y_data = x_data.reshape((ndata[split], -1, 3)), y_data.reshape((ndata[split], -1, 1))
+    elif type == 'CNN':
+        x_data, y_data = x_data.reshape((-1, frequency, frequency, 3)), y_data.reshape((-1, 1))
+        x_data = x_data.transpose((0, 3, 1, 2))
     return x_data, y_data
 
 
 class CatheterDataset(Dataset):
-    def __init__(self, folders, type):
+    def __init__(self, splits, type):
         self.type = type
 
-        x = [] if type == 'RNN' else None
-        y = [] if type == 'RNN' else None
-        max_len = 0
-        root_dir = f'data/preprocess/' + ('spectrogram' if type == 'CNN' else 'series')
-
-        for dir_name in folders:
-            file_dir = f'{root_dir}/{dir_name}'
-            input_dir = file_dir + '/input'
-            folder = [f for f in listdir(input_dir) if isfile(join(input_dir, f)) and '.csv' in f]
-
-            for file in folder:
-                x_data, y_data = import_data(file, file_dir)
-                if type == 'CNN':
-                    x_data = x_data.reshape((-1, 100, 100, 3))
-
-                if x is None:
-                    x, y = x_data, y_data
-                elif type == 'RNN':
-                    x.append(x_data)
-                    y.append(y_data)
-                    max_len = max(max_len, x.shape[0])
-                else:
-                    x = np.append(x, x_data, axis=0)
-                    y = np.append(y, y_data, axis=0)
-        if type == 'RNN':
-            for i in range(len(x)):
-                length = x[i].shape[0]
-                x[i] = np.pad(x[i], [(max_len - length, 0), (0, 0)], mode='constant', constant_values=0.0)
-                y[i] = np.pad(y[i], [(max_len - length, 0), (0, 0)], mode='constant', constant_values=0.0)
-            x, y = np.stack(x, axis=0), np.stack(y, axis=0)
-
-        self.x = np.float64(x)
-        self.y = np.float64(y)
-        self.len = x.shape[1] if type == 'RNN' else x.shape[0]
+        x, y = None, None
+        if type == 'CNN':
+            base_dir = 'data/preprocess/spectrogram'
+        else:
+            base_dir = 'data/preprocess/series'
+        for split_name in splits:
+            x_data, y_data = import_data(base_dir, split_name, type)
+            if x is None:
+                x, y = x_data, y_data
+            else:
+                x, y = np.append(x, x_data, axis=0), np.append(y, y_data, axis=0)
+        
+        self.x = x
+        self.y = y
+        self.len = self.x.shape[1] if type == 'RNN' else self.x.shape[0]
 
     def __len__(self):
         return self.len

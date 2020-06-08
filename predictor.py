@@ -3,14 +3,25 @@ from pathlib import Path
 
 import matplotlib.pyplot as plt
 import torch
+from torch.nn.functional import l1_loss
 
-import models
+from models import DNN, RNN, CNN
 from data import import_data
+from preprocess import ndata, frequency
+
+
+def repackage_hidden(h):
+    if h is None:
+        return h
+    if isinstance(h, torch.Tensor):
+        return h.detach()
+    else:
+        return tuple(repackage_hidden(v) for v in h)
 
 
 def main():
     parser = argparse.ArgumentParser(description='PyTorch MNIST Example')
-    parser.add_argument('--model', type=str, default='DNN', choices=['DNN', 'SigDNN'])
+    parser.add_argument('--model', type=str, default='DNN', choices=['DNN', 'RNN', 'CNN'])
     parser.add_argument('--file-name', type=str, default='checkpoints/test/checkpoint_final.pth')
     parser.add_argument('--result-dir', type=str, default='results/test')
     parser.add_argument('--layer-cnt', type=int, default=2)
@@ -18,12 +29,7 @@ def main():
 
     torch.manual_seed(1)
     Path(args.result_dir).mkdir(parents=True, exist_ok=True)
-    model = {
-        'DNN': models.DNN(args.layer_cnt),
-        'RNN': models.RNN(args.layer_cnt),
-        'CNN': models.CNN(args.layer_cnt)
-    }.get(args.model, 'DNN')
-    model = model.double()
+    model = eval(args.model)(args.layer_cnt)
     loaded_state_dict = torch.load(args.file_name, map_location='cpu')
     try:
         model.load_state_dict(loaded_state_dict['model_state_dict'])
@@ -32,28 +38,40 @@ def main():
     model.eval()
 
     with torch.no_grad():
-        for idx in range(1, 13):
-            root_dir = 'data/preprocess/spectrogram/test' if model.type == 'CNN' else 'data/preprocess/series/test'
-            x, y = import_data(f'{root_dir}/{idx}.csv', model.settings)
-            if model.type == 'CNN':
-                x = x.reshape((-1, 100, 100, 3))
-            elif model.type == 'RNN':
-                x = x.reshape((1, x.shape[0], 3))
+        root_dir = 'data/preprocess/' + ('spectrogram' if model.type == 'CNN' else 'series')
+        x, y = import_data(root_dir, 'test', model.type)
+        if model.type == 'RNN':
+            x, y = x.transpose((1, 0, 2)), y.transpose((1, 0, 2))
+        
+        x, y = torch.from_numpy(x), torch.from_numpy(y)
+        print(x.shape, y.shape)
 
-            x, y = torch.from_numpy(x), torch.from_numpy(y)
-
+        if model.type == 'RNN':
+            h = model.init_hidden(ndata['test'])
+            h = repackage_hidden(h)
+            y_pred, _ = model(x, h)
+        else:
             y_pred = model(x)
-            y, y_pred = y.view(-1), y_pred.view(-1)
-            loss = torch.nn.functional.l1_loss(y, y_pred)
+        
+        
+        sz = int(y.shape[0] / ndata['test'])
+        for idx in range(ndata['test']):
+            if model.type == 'RNN':
+                real, pred = y[:, idx], y_pred[:, idx]
+            else:
+                real, pred = y[idx*sz:(idx+1)*sz], y_pred[idx*sz:(idx+1)*sz]
+            real, pred = real.view(-1), pred.view(-1)
+            loss = l1_loss(real, pred)
             print(f'Record #{idx} L1 Loss : {loss}')
 
-            xrange = range(0, y.shape[0])
-            plt.plot(xrange, y.data, label='real value')
-            plt.plot(xrange, y_pred.data, label='prediction')
+            xrange = range(0, real.shape[0])
+            plt.plot(xrange, real.data, label='real value')
+            plt.plot(xrange, pred.data, label='prediction')
             plt.ylabel('Weight [g]')
             plt.legend(loc=2)
-            plt.savefig(f'{args.result_dir}/prediction-{idx}.png', dpi=300)
+            plt.savefig(f'{args.result_dir}/prediction-{idx + 1}.png', dpi=300)
             plt.cla()
+        print(f'Total Test L1 Loss : {l1_loss(y, y_pred).item()}')
 
 
 main()
