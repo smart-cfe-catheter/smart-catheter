@@ -20,11 +20,9 @@ def repackage_hidden(h):
 
 
 def main():
-    parser = argparse.ArgumentParser(description='PyTorch MNIST Example')
-    parser.add_argument('--model', type=str, default='DNN', choices=['DNN', 'RNN', 'CNN'])
+    parser = argparse.ArgumentParser(description='Smart Catheter Predictor')
     parser.add_argument('--file-name', type=str, default='checkpoints/test/checkpoint_final.pth')
     parser.add_argument('--result-dir', type=str, default='results/test')
-    parser.add_argument('--layer-cnt', type=int, default=2)
     parser.add_argument('--no-cuda', action='store_true', default=False)
     args = parser.parse_args()
 
@@ -34,13 +32,7 @@ def main():
     device = torch.device('cuda' if use_cuda else 'cpu')
     print(f'Device selected: {device}\n')
 
-    model = eval(args.model)(args.layer_cnt)
-    loaded_state_dict = torch.load(args.file_name, map_location='cpu')
-    try:
-        model.load_state_dict(loaded_state_dict['model_state_dict'])
-    except RuntimeError:
-        model.module.load_state_dict(loaded_state_dict['model_state_dict'])
-    model = model.to(device)
+    model = torch.load(args.file_name, map_location='cpu').to(device)
     model.eval()
 
     with torch.no_grad():
@@ -59,7 +51,6 @@ def main():
         else:
             y_pred = model(x)
 
-        xrange = range(0, y.shape[0], 100)
         y, y_pred = y.cpu(), y_pred.cpu()
         sz = int(y.shape[0] / ndata['test'])
         for idx in range(ndata['test']):
@@ -68,16 +59,18 @@ def main():
             else:
                 real, pred = y[idx*sz:(idx+1)*sz], y_pred[idx*sz:(idx+1)*sz]
             real, pred = real.view(-1), pred.view(-1)
-            real, pred = real[xrange], pred[xrange]
+            xrange = range(0, real.shape[0])
             
             if model.type == 'CNN':
                 for i in range(1, real.shape[0]):
                     real[i] += real[i - 1]
                     pred[i] += pred[i - 1]
+
+                    real[i] = max(real[i], 0)
+                    pred[i] = max(pred[i], 0)
             
             loss = l1_loss(real, pred)
             print(f'Record #{idx} L1 Loss : {loss}')
-
             
             plt.plot(xrange, real.data, label='real value')
             plt.plot(xrange, pred.data, label='prediction')

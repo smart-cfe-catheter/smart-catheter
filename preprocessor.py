@@ -49,16 +49,15 @@ def interpolate(data, freq, xrange):
 def create_window_spectrogram(x, y):
     new_x, new_y = np.empty((0, frequency, frequency, 3)), np.empty((0, 1))
 
-    for start in range(1, x.shape[0] - frequency, frequency):
+    for start in range(0, x.shape[0] - frequency, frequency):
         end = start + frequency
-        x_window = x[start:end] - x[end - 1]
+        x_window = x[start:end]
         x_spectrogram = np.empty((frequency, frequency, 3))
         for channel in range(3):
             result, _ = pywt.cwt(x_window[:, channel], range(1, frequency + 1), 'morl', 0.001)
             x_spectrogram[:, :, channel] = result
 
-        y_window = y[end - 1] - y[start - 1]
-        y_window = y_window.reshape((-1, 1))
+        y_window = y[end - 1].reshape((-1, 1))
 
         new_x = np.append(new_x, x_spectrogram.reshape((-1, frequency, frequency, 3)), axis=0)
         new_y = np.append(new_y, y_window, axis=0)

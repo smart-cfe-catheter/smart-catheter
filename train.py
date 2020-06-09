@@ -15,7 +15,7 @@ from trainer import Trainer
 
 def weight_init(model):
     name = model.__class__.__name__
-    if name.find('Linear') != -1:
+    if name.find('Linear') != -1 or name.find('Conv') != -1:
         init.kaiming_normal_(model.weight.data)
 
 
@@ -132,7 +132,7 @@ def main():
     plt.legend(loc=2)
 
     if args.save_model:
-        save_checkpoint('final', args, args.epochs, model, optimizer, scheduler)
+        torch.save(model, os.path.join(args.checkpoint_dir, 'checkpoint_final.pth'))
         plt.savefig(f'{args.checkpoint_dir}/learning-curve.png', dpi=300)
 
     if args.visualize:
