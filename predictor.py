@@ -25,16 +25,22 @@ def main():
     parser.add_argument('--file-name', type=str, default='checkpoints/test/checkpoint_final.pth')
     parser.add_argument('--result-dir', type=str, default='results/test')
     parser.add_argument('--layer-cnt', type=int, default=2)
+    parser.add_argument('--no-cuda', action='store_true', default=False)
     args = parser.parse_args()
 
     torch.manual_seed(1)
     Path(args.result_dir).mkdir(parents=True, exist_ok=True)
+    use_cuda = not args.no_cuda and torch.cuda.is_available()
+    device = torch.device('cuda' if use_cuda else 'cpu')
+    print(f'Device selected: {device}\n')
+
     model = eval(args.model)(args.layer_cnt)
     loaded_state_dict = torch.load(args.file_name, map_location='cpu')
     try:
         model.load_state_dict(loaded_state_dict['model_state_dict'])
     except RuntimeError:
         model.module.load_state_dict(loaded_state_dict['model_state_dict'])
+    model = model.to(device)
     model.eval()
 
     with torch.no_grad():
@@ -43,17 +49,18 @@ def main():
         if model.type == 'RNN':
             x, y = x.transpose((1, 0, 2)), y.transpose((1, 0, 2))
         
-        x, y = torch.from_numpy(x), torch.from_numpy(y)
-        print(x.shape, y.shape)
+        x, y = torch.from_numpy(x).to(device), torch.from_numpy(y).to(device)
 
+        print('Predicting...')
         if model.type == 'RNN':
-            h = model.init_hidden(ndata['test'])
+            h = model.init_hidden(ndata['test']).to(device)
             h = repackage_hidden(h)
             y_pred, _ = model(x, h)
         else:
             y_pred = model(x)
-        
-        
+
+        xrange = range(0, y.shape[0], 100)
+        y, y_pred = y.cpu(), y_pred.cpu()
         sz = int(y.shape[0] / ndata['test'])
         for idx in range(ndata['test']):
             if model.type == 'RNN':
@@ -61,14 +68,17 @@ def main():
             else:
                 real, pred = y[idx*sz:(idx+1)*sz], y_pred[idx*sz:(idx+1)*sz]
             real, pred = real.view(-1), pred.view(-1)
+            real, pred = real[xrange], pred[xrange]
+            
             if model.type == 'CNN':
                 for i in range(1, real.shape[0]):
                     real[i] += real[i - 1]
                     pred[i] += pred[i - 1]
+            
             loss = l1_loss(real, pred)
             print(f'Record #{idx} L1 Loss : {loss}')
 
-            xrange = range(0, real.shape[0])
+            
             plt.plot(xrange, real.data, label='real value')
             plt.plot(xrange, pred.data, label='prediction')
             plt.ylabel('Weight [g]')
