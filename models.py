@@ -2,7 +2,7 @@ import torch
 import torchvision
 from torch import nn
 from torch.nn import functional as f
-from torchvision.models import resnet18
+from torchvision.models import resnet152
 
 
 def stack_linear_layers(dim, layer_cnt):
@@ -50,7 +50,7 @@ class CNN(nn.Module):
         super(CNN, self).__init__()
         self.type = 'CNN'
 
-        self.backbone = resnet18()
+        self.backbone = resnet152()
         self.decoder = nn.Linear(1000, 1)
 
     def forward(self, x):
