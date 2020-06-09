@@ -104,7 +104,7 @@ def main():
     model = model.to(device).apply(weight_init)
 
     optimizer = optim.Adam(model.parameters(), lr=args.lr)
-    scheduler = optim.lr_scheduler.ReduceLROnPlateau(optimizer=optimizer, patience=20)
+    scheduler = optim.lr_scheduler.ReduceLROnPlateau(optimizer=optimizer, patience=100)
     last_epoch = load_checkpoint(args, model, optimizer, scheduler) if not args.reset else 0
 
     trainer = Trainer(model, optimizer=optimizer, device=device)
