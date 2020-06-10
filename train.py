@@ -78,14 +78,21 @@ def main():
     parser.add_argument('--model', type=str, default='DNN', choices=['DNN', 'RNN', 'CNN'])
     parser.add_argument('--device-ids', type=int, nargs='+', default=None)
     parser.add_argument('--checkpoint-dir', type=str, default='./checkpoints/test')
-    parser.add_argument('--layer-cnt', type=int, default=2)
     parser.add_argument('--save-per-epoch', type=int, default=50)
     parser.add_argument('--reset', action='store_true', default=False)
+    parser.add_argument('--nlayers', type=int, default=2)
+    parser.add_argument('--nhids', type=int, default=100)
+    parser.add_argument('--backbone', type=str, default='resnet152', choices=['resnet152', 'vgg19_bn'])
     args = parser.parse_args()
 
     torch.manual_seed(1)
     Path(args.checkpoint_dir).mkdir(parents=True, exist_ok=True)
-    model = eval(args.model)(args.layer_cnt)
+    if args.model == 'DNN':
+        model = DNN(args.nlayers)
+    elif args.model == 'RNN':
+        model = RNN(args.nlayers, args.nhids)
+    elif args.model == 'CNN':
+        model = CNN(args.backbone)
 
     use_cuda = not args.no_cuda and torch.cuda.is_available()
     device = torch.device('cuda' if use_cuda else 'cpu')
