@@ -2,7 +2,7 @@ import torch
 import torchvision
 from torch import nn
 from torch.nn import functional as f
-from torchvision.models import resnet152, resnet101, resnet50, vgg16_bn, vgg19_bn
+from torchvision.models import resnet152, resnet101, vgg19_bn
 
 
 def stack_linear_layers(dim, layer_cnt):

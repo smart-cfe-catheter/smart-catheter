@@ -70,7 +70,7 @@ def main():
     parser = argparse.ArgumentParser(description='Smart Catheter Trainer')
     parser.add_argument('--batch-size', type=int, default=256)
     parser.add_argument('--epochs', type=int, default=50)
-    parser.add_argument('--lr', type=float, default=0.01)
+    parser.add_argument('--lr', type=float, default=0.001)
     parser.add_argument('--no-cuda', action='store_true', default=False)
     parser.add_argument('--log-interval', type=int, default=100)
     parser.add_argument('--save-model', action='store_true', default=False)
@@ -82,7 +82,7 @@ def main():
     parser.add_argument('--reset', action='store_true', default=False)
     parser.add_argument('--nlayers', type=int, default=2)
     parser.add_argument('--nhids', type=int, default=100)
-    parser.add_argument('--backbone', type=str, default='resnet152', choices=['resnet152', 'vgg19_bn'])
+    parser.add_argument('--backbone', type=str, default='resnet101', choices=['resnet101', 'resnet152', 'vgg19_bn'])
     args = parser.parse_args()
 
     torch.manual_seed(1)
@@ -140,7 +140,6 @@ def main():
 
     if args.save_model:
         save_checkpoint('final', args, args.epochs, model, optimizer, scheduler)
-        torch.save(model, os.path.join(args.checkpoint_dir, 'checkpoint_final.pth'))
         plt.savefig(f'{args.checkpoint_dir}/learning-curve.png', dpi=300)
 
     if args.visualize:
