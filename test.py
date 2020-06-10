@@ -6,8 +6,8 @@ import torch
 from torch.nn.functional import l1_loss
 
 from data import import_data
+from models import CNN, RNN
 from preprocess import ndata
-from models import CNN, DNN, RNN
 
 
 def repackage_hidden(h):
@@ -24,13 +24,12 @@ def main():
     parser.add_argument('--file-name', type=str, default='checkpoints/test/checkpoint_final.pth')
     parser.add_argument('--result-dir', type=str, default='results/test')
     parser.add_argument('--no-cuda', action='store_true', default=False)
-    parser.add_argument('--batch-size', type=int, default=256)
-    parser.add_argument('--model', type=str, default='DNN', choices=['DNN', 'RNN', 'CNN'])
+    parser.add_argument('--model', type=str, default='DNN', choices=['DNN', 'RNN', 'SigDNN', 'CNN'])
     parser.add_argument('--nlayers', type=int, default=2)
     parser.add_argument('--nhids', type=int, default=100)
     parser.add_argument('--backbone', type=str, default='resnet152', choices=['resnet152', 'vgg19_bn'])
     args = parser.parse_args()
-    
+
     torch.manual_seed(1)
     Path(args.result_dir).mkdir(parents=True, exist_ok=True)
     use_cuda = not args.no_cuda and torch.cuda.is_available()
@@ -38,11 +37,11 @@ def main():
     print(f'Device selected: {device}\n')
 
     state_dict = torch.load(args.file_name, map_location='cpu')
-    if args.model == 'DNN':
-        model = DNN(args.nlayers)
+    if args.model == 'DNN' or args.model == 'SigDNN':
+        model = eval(args.model)(args.nlayers)
     elif args.model == 'RNN':
         model = RNN(args.nlayers, args.nhids)
-    elif args.model == 'CNN':
+    else:
         model = CNN(args.backbone)
     model = model.to(device)
     model.load_state_dict(state_dict['model_state_dict'])

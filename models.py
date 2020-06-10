@@ -1,8 +1,5 @@
-import torch
-import torchvision
 from torch import nn
 from torch.nn import functional as f
-from torchvision.models import resnet152, resnet101, vgg19_bn
 
 
 def stack_linear_layers(dim, layer_cnt):
@@ -43,6 +40,21 @@ class RNN(nn.Module):
     def init_hidden(self, batch_size):
         weight = next(self.parameters())
         return weight.new_zeros((self.nlayers, batch_size, self.nhids))
+
+
+class SigDNN(nn.Module):
+    def __init__(self, nlayers):
+        super(SigDNN, self).__init__()
+        self.type = 'SigDNN'
+
+        layers = stack_linear_layers(300, nlayers)
+        self.fc_layers = nn.Sequential(*layers)
+        self.decoder = nn.Linear(300, 1)
+
+    def forward(self, x):
+        x = self.fc_layers(x)
+        x = f.leaky_relu(self.decoder(x))
+        return x
 
 
 class CNN(nn.Module):

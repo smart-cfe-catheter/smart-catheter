@@ -8,8 +8,8 @@ from torch import optim, nn
 from torch.nn import init
 from torch.utils.data import DataLoader
 
-from models import DNN, RNN, CNN
 from data import CatheterDataset
+from models import RNN, CNN
 from trainer import Trainer
 
 
@@ -75,7 +75,7 @@ def main():
     parser.add_argument('--log-interval', type=int, default=100)
     parser.add_argument('--save-model', action='store_true', default=False)
     parser.add_argument('--visualize', action='store_true', default=False)
-    parser.add_argument('--model', type=str, default='DNN', choices=['DNN', 'RNN', 'CNN'])
+    parser.add_argument('--model', type=str, default='DNN', choices=['DNN', 'RNN', 'SigDNN', 'CNN'])
     parser.add_argument('--device-ids', type=int, nargs='+', default=None)
     parser.add_argument('--checkpoint-dir', type=str, default='./checkpoints/test')
     parser.add_argument('--save-per-epoch', type=int, default=50)
@@ -87,11 +87,11 @@ def main():
 
     torch.manual_seed(1)
     Path(args.checkpoint_dir).mkdir(parents=True, exist_ok=True)
-    if args.model == 'DNN':
-        model = DNN(args.nlayers)
+    if args.model == 'DNN' or args.model == 'SigDNN':
+        model = eval(args.model)(args.nlayers)
     elif args.model == 'RNN':
         model = RNN(args.nlayers, args.nhids)
-    elif args.model == 'CNN':
+    else:
         model = CNN(args.backbone)
 
     use_cuda = not args.no_cuda and torch.cuda.is_available()

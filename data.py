@@ -1,6 +1,3 @@
-from os import listdir
-from os.path import isfile, join
-
 import numpy as np
 from torch.utils.data import Dataset
 
@@ -15,6 +12,11 @@ def import_data(prefix, split, type):
     x_data, y_data = np.frombuffer(x_buffer, np.float32), np.frombuffer(y_buffer, np.float32)
     if type == 'DNN':
         x_data, y_data = x_data.reshape((-1, 3)), y_data.reshape((-1, 1))
+    elif type == 'SigDNN':
+        x_data, y_data = x_data.reshape((ndata[split], -1, 3)), y_data.reshape((ndata[split], -1, 1))
+        length = x_data.shape[1]
+        x_data = x_data[:, :(length - length % 100)].reshape((-1, 300))
+        y_data = y_data[:, np.arange(99, y_data.shape[1], 100)].reshape((-1, 1))
     elif type == 'RNN':
         x_data, y_data = x_data.reshape((ndata[split], -1, 3)), y_data.reshape((ndata[split], -1, 1))
     elif type == 'CNN':
@@ -38,7 +40,7 @@ class CatheterDataset(Dataset):
                 x, y = x_data, y_data
             else:
                 x, y = np.append(x, x_data, axis=0), np.append(y, y_data, axis=0)
-        
+
         self.x = x
         self.y = y
         self.len = self.x.shape[1] if type == 'RNN' else self.x.shape[0]
