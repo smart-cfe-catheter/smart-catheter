@@ -9,7 +9,7 @@ from torch.nn import init
 from torch.utils.data import DataLoader
 
 from data import CatheterDataset
-from models import RNN, CNN
+from models import RNN, CNN, DNN, SigRNN, SigDNN
 from trainer import Trainer
 
 
@@ -41,7 +41,7 @@ def load_checkpoint(args, model, optimizer, scheduler):
         return last_epoch
 
     files = os.listdir(args.checkpoint_dir)
-    files.sort(key=len)
+    files.sort(key=lambda item: (len(item), item))
 
     if len(files) == 0:
         return last_epoch
@@ -75,22 +75,22 @@ def main():
     parser.add_argument('--log-interval', type=int, default=100)
     parser.add_argument('--save-model', action='store_true', default=False)
     parser.add_argument('--visualize', action='store_true', default=False)
-    parser.add_argument('--model', type=str, default='DNN', choices=['DNN', 'RNN', 'SigDNN', 'CNN'])
+    parser.add_argument('--model', type=str, default='DNN', choices=['DNN', 'RNN', 'SigDNN', 'SigRNN', 'CNN'])
     parser.add_argument('--device-ids', type=int, nargs='+', default=None)
     parser.add_argument('--checkpoint-dir', type=str, default='./checkpoints/test')
     parser.add_argument('--save-per-epoch', type=int, default=50)
     parser.add_argument('--reset', action='store_true', default=False)
     parser.add_argument('--nlayers', type=int, default=2)
     parser.add_argument('--nhids', type=int, default=100)
-    parser.add_argument('--backbone', type=str, default='resnet101', choices=['resnet101', 'resnet152', 'vgg19_bn'])
+    parser.add_argument('--backbone', type=str, default='resnet101', choices=['resnet18', 'resnet50', 'resnet101', 'resnet152', 'vgg19_bn'])
     args = parser.parse_args()
 
     torch.manual_seed(1)
     Path(args.checkpoint_dir).mkdir(parents=True, exist_ok=True)
     if args.model == 'DNN' or args.model == 'SigDNN':
         model = eval(args.model)(args.nlayers)
-    elif args.model == 'RNN':
-        model = RNN(args.nlayers, args.nhids)
+    elif args.model == 'RNN' or args.model == 'SigRNN':
+        model = eval(args.model)(args.nlayers, args.nhids)
     else:
         model = CNN(args.backbone)
 
@@ -111,7 +111,7 @@ def main():
     model = model.to(device).apply(weight_init)
 
     optimizer = optim.Adam(model.parameters(), lr=args.lr)
-    scheduler = optim.lr_scheduler.ReduceLROnPlateau(optimizer=optimizer, patience=100)
+    scheduler = optim.lr_scheduler.ReduceLROnPlateau(optimizer=optimizer, patience=50)
     last_epoch = load_checkpoint(args, model, optimizer, scheduler) if not args.reset else 0
 
     trainer = Trainer(model, optimizer=optimizer, device=device)

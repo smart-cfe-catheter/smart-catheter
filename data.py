@@ -15,8 +15,10 @@ def import_data(prefix, split, type):
     elif type == 'SigDNN':
         x_data, y_data = x_data.reshape((ndata[split], -1, 3)), y_data.reshape((ndata[split], -1, 1))
         length = x_data.shape[1]
-        x_data = x_data[:, :(length - length % 100)].reshape((-1, 300))
+        x_data = x_data[:, :(length - length % 100)].reshape((-1, 3 * frequency))
         y_data = y_data[:, np.arange(99, y_data.shape[1], 100)].reshape((-1, 1))
+    elif type == 'SigRNN':
+        x_data, y_data = x_data.reshape((ndata[split], -1, frequency * frequency * 3)), y_data.reshape((ndata[split], -1, 1))
     elif type == 'RNN':
         x_data, y_data = x_data.reshape((ndata[split], -1, 3)), y_data.reshape((ndata[split], -1, 1))
     elif type == 'CNN':
@@ -30,7 +32,7 @@ class CatheterDataset(Dataset):
         self.type = type
 
         x, y = None, None
-        if type == 'CNN':
+        if type == 'CNN' or type == 'SigRNN':
             base_dir = 'data/preprocess/spectrogram'
         else:
             base_dir = 'data/preprocess/series'

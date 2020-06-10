@@ -6,8 +6,8 @@ import torch
 from torch.nn.functional import l1_loss
 
 from data import import_data
-from models import CNN, RNN
-from preprocess import ndata
+from models import CNN, RNN, SigRNN, DNN, SigDNN
+from preprocess import ndata, frequency
 
 
 def repackage_hidden(h):
@@ -24,10 +24,10 @@ def main():
     parser.add_argument('--file-name', type=str, default='checkpoints/test/checkpoint_final.pth')
     parser.add_argument('--result-dir', type=str, default='results/test')
     parser.add_argument('--no-cuda', action='store_true', default=False)
-    parser.add_argument('--model', type=str, default='DNN', choices=['DNN', 'RNN', 'SigDNN', 'CNN'])
+    parser.add_argument('--model', type=str, default='DNN', choices=['DNN', 'RNN', 'SigDNN', 'SigRNN', 'CNN'])
     parser.add_argument('--nlayers', type=int, default=2)
     parser.add_argument('--nhids', type=int, default=100)
-    parser.add_argument('--backbone', type=str, default='resnet152', choices=['resnet152', 'vgg19_bn'])
+    parser.add_argument('--backbone', type=str, default='resnet101', choices=['resnet18', 'resnet50', 'resnet101', 'resnet152', 'vgg19_bn'])
     args = parser.parse_args()
 
     torch.manual_seed(1)
@@ -39,8 +39,8 @@ def main():
     state_dict = torch.load(args.file_name, map_location='cpu')
     if args.model == 'DNN' or args.model == 'SigDNN':
         model = eval(args.model)(args.nlayers)
-    elif args.model == 'RNN':
-        model = RNN(args.nlayers, args.nhids)
+    elif args.model == 'RNN' or args.model == 'SigRNN':
+        model = eval(args.model)(args.nlayers, args.nhids)
     else:
         model = CNN(args.backbone)
     model = model.to(device)
@@ -49,20 +49,20 @@ def main():
     total_loss = 0.0
 
     with torch.no_grad():
-        root_dir = 'data/preprocess/' + ('spectrogram' if model.type == 'CNN' else 'series')
+        root_dir = 'data/preprocess/' + ('spectrogram' if model.type == 'CNN' or model.type == 'SigRNN' else 'series')
         x, y = import_data(root_dir, 'test', model.type)
-        if model.type == 'RNN':
-            x, y = x.transpose((1, 0, 2)), y.transpose((1, 0, 2))
         sz = int(y.shape[0] / ndata['test'])
 
         for idx in range(ndata['test']):
             if model.type == 'RNN':
                 x_data, y_real = x[:, idx].reshape((-1, 1, 3)), y[:, idx]
+            elif model.type == 'SigRNN':
+                x_data, y_real = x[idx].reshape((-1, 1, frequency * frequency * 3)), y[idx]
             else:
                 x_data, y_real = x[idx * sz:(idx + 1) * sz], y[idx * sz:(idx + 1) * sz]
             x_data, y_real = torch.from_numpy(x_data).to(device), torch.from_numpy(y_real).to(device)
 
-            if model.type == 'RNN':
+            if model.type == 'RNN' or model.type == 'SigRNN':
                 h = model.init_hidden(1).to(device)
                 h = repackage_hidden(h)
                 y_pred, _ = model(x_data, h)

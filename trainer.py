@@ -19,7 +19,7 @@ class Trainer:
         x, y = x.to(self.device), y.to(self.device)
         self.optimizer.zero_grad()
 
-        if self.model.type == 'RNN':
+        if self.model.type == 'RNN' or self.model.type == 'SigRNN':
             h = repackage_hidden(h).to(self.device)
             output, h = self.model(x, h)
             loss = f.smooth_l1_loss(output, y, reduction=reduction)
@@ -35,7 +35,7 @@ class Trainer:
         total_num = 0
 
         for batch, (x, y) in enumerate(loader):
-            if self.model.type == 'RNN':
+            if self.model.type == 'RNN' or self.model.type == 'SigRNN':
                 if batch == 0:
                     h = self.model.init_hidden(x.shape[1])
                 loss, h = self.train_epoch(x, y, h=h, reduction='mean')
@@ -43,6 +43,8 @@ class Trainer:
                 loss = self.train_epoch(x, y, reduction='mean')
             total_loss += loss.item() * y.numel()
             loss.backward()
+            if self.model.type == 'RNN' or self.model.type == 'SigRNN':
+                torch.nn.utils.clip_grad_norm_(self.model.parameters(), 0.25)
             total_num += y.numel()
 
             self.optimizer.step()
@@ -58,7 +60,7 @@ class Trainer:
 
         with torch.no_grad():
             for batch, (x, y) in enumerate(loader):
-                if self.model.type == 'RNN':
+                if self.model.type == 'RNN' or self.model.type == 'SigRNN':
                     if batch == 0:
                         h = self.model.init_hidden(x.shape[1])
                     loss, h = self.train_epoch(x, y, h=h, reduction='sum')
