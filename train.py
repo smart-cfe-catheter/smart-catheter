@@ -132,6 +132,7 @@ def main():
     plt.legend(loc=2)
 
     if args.save_model:
+        save_checkpoint('final', args, args.epochs, model, optimizer, scheduler)
         torch.save(model, os.path.join(args.checkpoint_dir, 'checkpoint_final.pth'))
         plt.savefig(f'{args.checkpoint_dir}/learning-curve.png', dpi=300)
 

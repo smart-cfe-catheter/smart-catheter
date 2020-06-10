@@ -7,6 +7,7 @@ from torch.nn.functional import l1_loss
 
 from data import import_data
 from preprocess import ndata
+import models
 
 
 def repackage_hidden(h):
@@ -32,7 +33,10 @@ def main():
     device = torch.device('cuda' if use_cuda else 'cpu')
     print(f'Device selected: {device}\n')
 
-    model = torch.load(args.file_name, map_location='cpu').to(device)
+    state_dict = torch.load(args.file_name, map_location='cpu')
+    model = models.CNN(0)
+    model.load_state_dict(state_dict['model_state_dict'])
+    model = model.to(device)
     model.eval()
     total_loss = 0.0
 
