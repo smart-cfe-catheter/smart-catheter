@@ -45,12 +45,12 @@ class CatheterDataset(Dataset):
 
         self.x = x
         self.y = y
-        self.len = self.x.shape[1] if type == 'RNN' else self.x.shape[0]
+        self.len = self.x.shape[1] if (type == 'RNN' or type == 'SigRNN') else self.x.shape[0]
 
     def __len__(self):
         return self.len
 
     def __getitem__(self, idx):
-        if self.type == 'RNN':
+        if self.type == 'RNN' or self.type == 'SigRNN':
             return self.x[:, idx], self.y[:, idx]
         return self.x[idx], self.y[idx]

@@ -55,7 +55,7 @@ def main():
 
         for idx in range(ndata['test']):
             if model.type == 'RNN':
-                x_data, y_real = x[:, idx].reshape((-1, 1, 3)), y[:, idx]
+                x_data, y_real = x[idx].reshape((-1, 1, 3)), y[idx]
             elif model.type == 'SigRNN':
                 x_data, y_real = x[idx].reshape((-1, 1, frequency * frequency * 3)), y[idx]
             else:
