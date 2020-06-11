@@ -10,7 +10,7 @@ from torch.nn import init
 from torch.utils.data import DataLoader
 
 from data import CatheterDataset
-from models import CNN
+from models import CNN, RNN, DNN, SigRNN, SigDNN
 from trainer import Trainer
 
 
