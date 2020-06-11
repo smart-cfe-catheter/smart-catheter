@@ -1,4 +1,5 @@
 import argparse
+import copy
 import os
 from pathlib import Path
 
@@ -9,7 +10,7 @@ from torch.nn import init
 from torch.utils.data import DataLoader
 
 from data import CatheterDataset
-from models import RNN, CNN, DNN, SigRNN, SigDNN
+from models import CNN
 from trainer import Trainer
 
 
@@ -116,6 +117,8 @@ def main():
 
     trainer = Trainer(model, optimizer=optimizer, device=device)
 
+    best_model = copy.deepcopy(model)
+    best_loss = 1e9
     train_losses = []
     validation_losses = []
     for e in range(last_epoch + 1, args.epochs + 1):
@@ -127,9 +130,13 @@ def main():
         validation_losses.append(validation_loss)
         scheduler.step(validation_loss)
 
+        if best_loss > validation_loss:
+            best_model = copy.deepcopy(model)
+            best_loss = validation_loss
         if args.save_model and e % args.save_per_epoch == 0:
-            save_checkpoint(e, args, e, model, optimizer, scheduler)
-        print(f'Train Loss: {train_loss} / Validation Loss: {validation_loss}\n')
+            save_checkpoint(e, args, e, best_model, optimizer, scheduler)
+        print(f'Train Loss: {train_loss} / Validation Loss: {validation_loss} '
+              f'/ Learning Rate: {optimizer.param_groups[0]["lr"]}\n')
     print(f'\nTest Loss: {trainer.test(test_loader)}')
 
     plt.plot(range(last_epoch + 1, args.epochs + 1), train_losses, label='train loss')
@@ -139,7 +146,7 @@ def main():
     plt.legend(loc=2)
 
     if args.save_model:
-        save_checkpoint('final', args, args.epochs, model, optimizer, scheduler)
+        save_checkpoint('final', args, args.epochs, best_model, optimizer, scheduler)
         plt.savefig(f'{args.checkpoint_dir}/learning-curve.png', dpi=300)
 
     if args.visualize:
