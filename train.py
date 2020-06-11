@@ -20,7 +20,7 @@ def weight_init(model):
         init.kaiming_normal_(model.weight.data)
 
 
-def save_checkpoint(tag, args, epoch, model, optimizer, scheduler):
+def save_checkpoint(tag, args, epoch, model, optimizer):
     print('Snapshot Checkpoint...')
     if args.device_ids and len(args.device_ids) > 1:
         model_state_dict = model.module.state_dict()
@@ -30,12 +30,11 @@ def save_checkpoint(tag, args, epoch, model, optimizer, scheduler):
     torch.save({
         'last_epoch': epoch,
         'model_state_dict': model_state_dict,
-        'optimizer_state_dict': optimizer.state_dict(),
-        'scheduler_state_dict': scheduler.state_dict()
+        'optimizer_state_dict': optimizer.state_dict()
     }, os.path.join(args.checkpoint_dir, 'checkpoint_' + str(tag) + '.pth'))
 
 
-def load_checkpoint(args, model, optimizer, scheduler):
+def load_checkpoint(args, model, optimizer):
     last_epoch = 0
     if os.path.isdir(args.checkpoint_dir) is False:
         os.makedirs(args.checkpoint_dir)
@@ -54,7 +53,6 @@ def load_checkpoint(args, model, optimizer, scheduler):
 
         last_epoch = loaded_state_dict['last_epoch']
         optimizer.load_state_dict(loaded_state_dict['optimizer_state_dict'])
-        scheduler.load_state_dict(loaded_state_dict['scheduler_state_dict'])
 
         try:
             model.load_state_dict(loaded_state_dict['model_state_dict'])
@@ -112,8 +110,8 @@ def main():
     model = model.to(device).apply(weight_init)
 
     optimizer = optim.Adam(model.parameters(), lr=args.lr)
-    scheduler = optim.lr_scheduler.ReduceLROnPlateau(optimizer=optimizer, patience=50)
-    last_epoch = load_checkpoint(args, model, optimizer, scheduler) if not args.reset else 0
+    # scheduler = optim.lr_scheduler.ReduceLROnPlateau(optimizer=optimizer, patience=50)
+    last_epoch = load_checkpoint(args, model, optimizer) if not args.reset else 0
 
     trainer = Trainer(model, optimizer=optimizer, device=device)
 
@@ -128,16 +126,16 @@ def main():
 
         train_losses.append(train_loss)
         validation_losses.append(validation_loss)
-        scheduler.step(validation_loss)
+        # scheduler.step(validation_loss)
 
         if best_loss > validation_loss:
             best_model = copy.deepcopy(model)
             best_loss = validation_loss
         if args.save_model and e % args.save_per_epoch == 0:
-            save_checkpoint(e, args, e, best_model, optimizer, scheduler)
-        print(f'Train Loss: {train_loss} / Validation Loss: {validation_loss} '
-              f'/ Learning Rate: {optimizer.param_groups[0]["lr"]}\n')
-    print(f'\nTest Loss: {trainer.test(test_loader)}')
+            save_checkpoint(e, args, e, best_model, optimizer)
+        print(f'Train Loss: {train_loss} / Validation Loss: {validation_loss}')
+    trainer.model = best_model
+    print(f'\nBest Loss: {best_loss} / Test Loss: {trainer.test(test_loader)}')
 
     plt.plot(range(last_epoch + 1, args.epochs + 1), train_losses, label='train loss')
     plt.plot(range(last_epoch + 1, args.epochs + 1), validation_losses, label='validation loss')
@@ -146,7 +144,7 @@ def main():
     plt.legend(loc=2)
 
     if args.save_model:
-        save_checkpoint('final', args, args.epochs, best_model, optimizer, scheduler)
+        save_checkpoint('final', args, args.epochs, best_model, optimizer)
         plt.savefig(f'{args.checkpoint_dir}/learning-curve.png', dpi=300)
 
     if args.visualize:

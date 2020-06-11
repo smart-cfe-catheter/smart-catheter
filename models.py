@@ -35,6 +35,7 @@ class RNN(nn.Module):
         self.decoder = nn.Linear(self.nhids, 1)
 
     def forward(self, x, h):
+        self.rnn.flatten_parameters()
         x, h = self.rnn(x, h)
         x = f.leaky_relu(self.decoder(x))
 
