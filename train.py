@@ -31,7 +31,7 @@ if __name__ == "__main__":
     print("Fix Seed: ", args.random_seed)
     seed_everything(args.random_seed)
 
-    model = eval(f"{args.input_type}Model")(args)
+    model = eval(f"{args.input_type}Model")(args).double()
 
     print(":: Start Training ::")
     trainer = Trainer(
