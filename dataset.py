@@ -1,5 +1,6 @@
 import itertools
 import numpy as np
+from scipy.signal import butter, filtfilt
 from pathlib import Path
 from torch.utils.data import Dataset
 
@@ -14,6 +15,14 @@ class CatheterDataset(Dataset):
 
     def __getitem__(self, idx):
         return self.signals[idx], self.scales[idx]
+
+class FilterDataset(CatheterDataset):
+    def __init__(self, data_path, cutoff, freq=100, ftype='high'):
+        super().__init__(data_path)
+        
+        nyq = 0.5 * freq
+        numer, denom = butter(10, cutoff/nyq, btype=ftype, analog=False)
+        self.signals = filtfilt(numer, denom, self.signals.reshape(1,-1)) 
 
 
 class RNNDataset(CatheterDataset):
