@@ -1,6 +1,6 @@
 # Smart Catheter
 
-***Official implementation*** of "Roughly Collected Dataset for Contact Force Sensing Catheter "
+***Official implementation*** of "Roughly Collected Dataset for Contact Force Sensing Catheter". All property belongs to Asan Medical Center, Asan Institue of Life Sciences, Biomedical Engineering Research Center for Life Sciences.
 
 - Paper: 
 - Dataset: 
