@@ -1,8 +1,7 @@
+# Smart Catheter
 <p align="center">
   <img src="imgs/environment.jpeg" width="80%"/>
 </p>
-
-# Smart Catheter
 
 ***Official implementation*** of "Roughly Collected Dataset for Contact Force Sensing Catheter". All property belongs to Asan Medical Center, Asan Institue of Life Sciences, Biomedical Engineering Research Center for Life Sciences.
 
@@ -94,15 +93,30 @@ model:
 
 ## Test
 
-TODO
+With our checkpoint file, you can measure performance on test set. Run `test.py` with your checkpoint file, than you can see the L1 loss and 95% reliability.
+```bash
+> python test.py -h
+usage: test.py [-h] [--batch_size BATCH_SIZE] [--test_data TEST_DATA] [--device {cpu,cuda}] [--ckpt_dir CKPT_DIR]
+
+optional arguments:
+  -h, --help            show this help message and exit
+
+test:
+  --batch_size BATCH_SIZE
+                        Number of instances in a batch.
+  --test_data TEST_DATA
+                        Root directory of test data.
+  --device {cpu,cuda}   Device going to use for training.
+  --ckpt_dir CKPT_DIR   Directory which contains the checkpoint and args.json.
+```
 
 ## Experiments
 
-With several combinations of `# of hidden`, `# of layers` (and `# of heads` for transformer), the following models gain the best performance for test data.
+With several combinations of `# of hidden`, `# of layers` (and `# of heads` for transformer), the following models gain the best performance for test data. We used preprocessed data, not the original data. You can see `preprocess.py` if you're interested in our preprocessing.
 
 - FCN: 2 layers, 64 hidden dimension
 - RNN: GRU cell, 4 layers, 64 hidden dimension
-- Transformer: 4 layers, 512 hidden dimension
+- Transformer: 12 heads, 4 layers, 512 hidden dimension
 
 | Model       | FCN   | RNN   | Transformer |
 | ----------- | ----- | ----- | ----------- |
