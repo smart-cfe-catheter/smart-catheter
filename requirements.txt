@@ -4,3 +4,4 @@ pandas
 torch
 tensorboard
 tqdm
+munch
