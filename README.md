@@ -1,5 +1,5 @@
 <p align="center">
-  <img src="imgs/environment.jpeg" width="50%" height="50%"/>
+  <img src="imgs/environment.jpeg" width="80%"/>
 </p>
 
 # Smart Catheter
