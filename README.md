@@ -17,11 +17,11 @@ If you want to train your own model which is not in our implementations, follow 
 
 First, you need to create a new python package. It is done by copying one of the existing package.
 ```bash
-cp -r tasks/fcn tasks/<your-model>
+cp -r models/fcn models/<your-model>
 ```
 Then your task package will have the following structure.
 ```bash
-tasks/<your-model>
+models/<your-model>
 ├── __init__.py
 ├── arguments.py
 ├── model.py
@@ -45,19 +45,19 @@ In `model.py`, there is `Model` class that is used for predicting contact force 
 
 After finishing `Dataset` and `Model`, please add your task to `arguments.py`.
 ```python
-# tasks = ['fcn', 'rnn', 'transformer']
-tasks = ['<your-model>', 'fcn', 'rnn', 'transformer']
+# models = ['fcn', 'rnn', 'transformer']
+models = ['<your-model>', 'fcn', 'rnn', 'transformer']
 ```
 Now you can train your own model!
 
 ## Train
 
-Training is simple. Run `python train.py --task <your-model> -h` to see the arguments and then add them. Because the arguments for each task is different, you should add `--task` option to see help. After adding the arguments, just run the command! Logs will be saved as tensorboard log that you can see on tensorboard.
+Training is simple. Run `python train.py --model <your-model> -h` to see the arguments and then add them. Because the arguments for each task is different, you should add `--task` option to see help. After adding the arguments, just run the command! Logs will be saved as tensorboard log that you can see on tensorboard.
 
 ```bash
-> python train.py --task fcn --help
-usage: train.py [-h] [--seed SEED] [--epochs EPOCHS] [--batch_size BATCH_SIZE] [--lr LR] [--log_interval LOG_INTERVAL] [--task {fcn,rnn,transformer}] [--train_data TRAIN_DATA] [--valid_data VALID_DATA] [--device {cpu,cuda}]
-                [--save_dir SAVE_DIR] [--log_dir LOG_DIR] [--input_len INPUT_LEN] [--n_channel N_CHANNEL] [--n_hid N_HID] [--n_layer N_LAYER] [--dropout DROPOUT]
+> python train.py --model fcn -h
+usage: train.py [-h] [--seed SEED] [--epochs EPOCHS] [--batch_size BATCH_SIZE] [--lr LR] [--log_interval LOG_INTERVAL] [--model {fcn,rnn,transformer}] [--train_data TRAIN_DATA] [--valid_data VALID_DATA] [--device {cpu,cuda}] [--save_dir SAVE_DIR] [--log_dir LOG_DIR] [--input_len INPUT_LEN]
+                [--n_channel N_CHANNEL] [--n_hid N_HID] [--n_layer N_LAYER] [--dropout DROPOUT]
 
 optional arguments:
   -h, --help            show this help message and exit
@@ -70,7 +70,7 @@ train:
   --lr LR               Learning rate.
   --log_interval LOG_INTERVAL
                         Log interval.
-  --task {fcn,rnn,transformer}
+  --model {fcn,rnn,transformer}
                         Task name for training.
   --train_data TRAIN_DATA
                         Root directory of train data.

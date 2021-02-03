@@ -1,11 +1,11 @@
 import argparse
 
-tasks = ['fcn', 'rnn', 'transformer']
+models = ['fcn', 'rnn', 'transformer']
 
 
-def get_task_parser():
+def get_model_parser():
     parser = argparse.ArgumentParser(add_help=False)
-    parser.add_argument('--task', type=str, choices=tasks)
+    parser.add_argument('--model', type=str, choices=models)
     return parser
 
 
@@ -21,7 +21,7 @@ def add_train_args(parser):
                        help="Learning rate.")
     group.add_argument('--log_interval', type=int, default=10,
                        help="Log interval.")
-    group.add_argument('--task', type=str, choices=tasks,
+    group.add_argument('--model', type=str, choices=models,
                        help="Task name for training.")
     group.add_argument('--train_data', type=str,
                        help="Root directory of train data.")

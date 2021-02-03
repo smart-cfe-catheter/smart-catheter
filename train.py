@@ -10,21 +10,21 @@ from torch.optim import Adam
 from torch.utils.data import DataLoader
 from torch.utils.tensorboard import SummaryWriter
 
-from arguments import get_task_parser, add_train_args
+from arguments import get_model_parser, add_train_args
 
 
 if __name__ == "__main__":
     # Read task argument first, and determine the other arguments
-    task_parser = get_task_parser()
+    model_parser = get_model_parser()
 
-    task_name = task_parser.parse_known_args()[0].task
-    task_module = importlib.import_module(f'tasks.{task_name}')
-    task_dataset = getattr(task_module, 'Dataset')
-    task_model = getattr(task_module, 'Model')
+    model_name = model_parser.parse_known_args()[0].model
+    model_module = importlib.import_module(f'models.{model_name}')
+    model_dataset = getattr(model_module, 'Dataset')
+    model_model = getattr(model_module, 'Model')
 
     parser = argparse.ArgumentParser()
     add_train_args(parser)
-    getattr(task_module, 'add_task_args')(parser)
+    getattr(model_module, 'add_task_args')(parser)
     args = parser.parse_args()
 
     # Seed settings
@@ -34,15 +34,15 @@ if __name__ == "__main__":
     torch.backends.cudnn.benchmark = False
 
     print('Loading train dataset...')
-    train_dataset = task_dataset(args, args.train_data)
+    train_dataset = model_dataset(args, args.train_data)
     train_loader = DataLoader(dataset=train_dataset, batch_size=args.batch_size, shuffle=True)
 
     print('Loading validation dataset...')
-    valid_dataset = task_dataset(args, args.valid_data)
+    valid_dataset = model_dataset(args, args.valid_data)
     valid_loader = DataLoader(dataset=valid_dataset, batch_size=args.batch_size)
 
     print('Building model...')
-    model = task_model(args)
+    model = model_model(args)
     model = model.to(args.device)
 
     criterion = nn.SmoothL1Loss()
