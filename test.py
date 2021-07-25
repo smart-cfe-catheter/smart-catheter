@@ -27,7 +27,7 @@ if __name__ == "__main__":
         config = munchify(config)
 
     model_name = config.model
-    model_module = importlib.import_module(f'tasks.{model_name}')
+    model_module = importlib.import_module(f'models.{model_name}')
     model_dataset = getattr(model_module, 'Dataset')
 
     test_dataset = model_dataset(config, args.test_data)
@@ -38,7 +38,7 @@ if __name__ == "__main__":
 
     with torch.no_grad():
         model.eval()
-        total_loss = torch.empty(0)
+        total_loss = torch.empty(0).to(args.device)
         for x, y in tqdm(test_loader):
             x, y = x.to(args.device), y.to(args.device)
             pred = model(x)
