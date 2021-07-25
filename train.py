@@ -46,6 +46,7 @@ if __name__ == "__main__":
     model = model.to(args.device)
 
     criterion = nn.SmoothL1Loss()
+    valid_criterion = nn.L1Loss(reduction='sum')
     optimizer = Adam(model.parameters(), lr=args.lr)
 
     print('Start training!')
@@ -77,7 +78,7 @@ if __name__ == "__main__":
             for x, y in valid_loader:
                 x, y = x.to(args.device), y.to(args.device)
                 pred = model(x)
-                valid_loss += criterion(pred, y).item()
+                valid_loss += valid_criterion(pred, y).item()
         print(
             f'Epoch: {epoch + 1} | '
             f'Train Loss: {train_loss} | '
