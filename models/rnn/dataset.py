@@ -18,6 +18,8 @@ class Dataset(data.Dataset):
         self.signals = np.load(f"{root_dir}/signals.npy").astype(np.float32)
         self.scales = np.load(f"{root_dir}/scales.npy").astype(np.float32)
 
+        self.signals = self.signals - self.signals[:, 0].reshape((self.signals.shape[0], 1, self.input_len, self.n_channel))
+
         self.signals = self.signals.reshape((self.signals.shape[0], -1, self.input_len * self.n_channel))
 
     def __len__(self):
