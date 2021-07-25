@@ -31,7 +31,7 @@ class Model(nn.Module):
         self.activation = nn.LeakyReLU()
 
     def forward(self, x):
-        memory = torch.zeros(x.shape)
+        memory = torch.zeros(x.shape).cuda()
         x = self.encoder(x, memory)
         x = self.decoder(x)
         x = self.activation(x)
